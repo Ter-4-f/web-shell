@@ -2,15 +2,14 @@ package com.teraf.webshell.business;
 
 import java.util.UUID;
 
-import com.teraf.webshell.model.Command;
-import com.teraf.webshell.model.Config;
+import com.teraf.webshell.config.Config;
+import com.teraf.webshell.dataaccess.SshConnectionDB;
+import com.teraf.webshell.dataaccess.SshDAO;
+import com.teraf.webshell.model.*;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-
-import com.teraf.webshell.dataaccess.ShellDAO;
-import com.teraf.webshell.model.ProblemException;
-import com.teraf.webshell.model.Shell;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -21,33 +20,33 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class ShellBC {
 
-    private final ShellDAO shellDAO;
+    private final SshDAO sshDAO;
+    private final SshConnectionDB connectionDAO;
     private final Config config;
 
-    public Flux<Shell> loadShells () {
-        return shellDAO.loadShells()
-                .switchIfEmpty(Mono.just(new Shell(config.getStartDir())));
+    public Flux<SshConnection> loadShells (@NonNull ServerData location) {
+        return connectionDAO.loadConnections()
+                .filter(connection -> connection.isConnectedToServer(location))
+                .switchIfEmpty(sshDAO.createConnection(location.getHost(),location.getPort(), location.getUsername(), location.getPassword()));
     }
 
-    public Shell loadShell (UUID id) {
-        return shellDAO.loadShell(id)
-                .orElseThrow(() -> ProblemException.create(HttpStatus.NOT_FOUND, "Shell does not exist", null));
+    public SshConnection loadConnection(@NonNull UUID id) {
+        return connectionDAO.loadConnection(id)
+                .orElseThrow(() -> new ProblemException(HttpStatus.NOT_FOUND, STR."Shell with id '\{id.toString()}' does not exist"));
     }
 
     public Flux<String> loadActiveOutput (UUID id) {
-        var command = loadShell(id).getNewestCommand();
-        return command.getOutputStream();
+        return loadConnection(id).getOutput();
     }
 
-    public Mono<Command> cancelCommand (UUID id) {
-        var command = loadShell(id).getNewestCommand();
-        var process = command.getProcess();
-        process.destroy();
-        if (process.isAlive()) {
-            log.warn("Process '{}' from command '{}' of shell '{}' hat to be forcibly terminated", command.getPid(), command.getCommand(), id.toString());
-            process.destroyForcibly();
+    public Mono<Boolean> cancelCommand (UUID id) {
+        var connection = loadConnection(id);
+        try {
+            connection.getShell().sendSignal("INT");
+            return Mono.just(true);
+        } catch (Exception e) {
+            log.error("Unable to cancel command for the shell '{}' at {}:{}", connection.getId().toString(), connection.getSession().getHost(), connection.getSession().getPort(), e);
+            return Mono.error(new ProblemException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to cancel the command"));
         }
-
-        return Mono.just(command);
     }
 }

@@ -3,6 +3,7 @@ package com.teraf.webshell.config;
 import org.springframework.context.annotation.*;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.*;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 
 import static org.springframework.security.config.Customizer.withDefaults;
@@ -18,7 +19,7 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             .httpBasic(withDefaults())
-            .csrf(csrf -> csrf.disable());
+            .csrf(AbstractHttpConfigurer::disable);
             
         return http.build();
     }

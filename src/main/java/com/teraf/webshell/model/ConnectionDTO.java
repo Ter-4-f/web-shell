@@ -6,12 +6,9 @@ import lombok.Data;
 
 @Data
 @Builder
-public class ShellDTO {
+public class ConnectionDTO {
 
     String id;
-    String cwd;
-    List<CommandDTO> commands;
     String createdAt;
-    boolean isActive;
 
 }

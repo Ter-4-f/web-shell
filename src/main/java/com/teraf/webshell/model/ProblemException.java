@@ -11,7 +11,6 @@ public class ProblemException extends RuntimeException {
     String detail;
     String title;
 
-    
 
     public ProblemException(int code, String title, String detail, Throwable cause) {
         super(cause);
@@ -20,12 +19,13 @@ public class ProblemException extends RuntimeException {
         this.title = title;
     }
 
-
-
-    public static ProblemException create (HttpStatus status, String detail, Throwable cause) {
-        return new ProblemException(status.value(), status.getReasonPhrase(), detail, cause);
-
+    public ProblemException(HttpStatus status, String detail, Throwable cause) {
+        this(status.value(), status.getReasonPhrase(), detail, cause);
     }
+    public ProblemException(HttpStatus status, String detail) {
+        this(status, detail, null);
+    }
+
 
     public ProblemDTO toDTO () {
         return new ProblemDTO(code, detail, title);
