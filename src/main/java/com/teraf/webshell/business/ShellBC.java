@@ -26,8 +26,7 @@ public class ShellBC {
 
     public Flux<SshConnection> loadShells (@NonNull ServerData location) {
         return connectionDAO.loadConnections()
-                .filter(connection -> connection.isConnectedToServer(location))
-                .switchIfEmpty(sshDAO.createConnection(location.getHost(),location.getPort(), location.getUsername(), location.getPassword()));
+                .filter(connection -> connection.isConnectedToServer(location));
     }
 
     public SshConnection loadConnection(@NonNull UUID id) {

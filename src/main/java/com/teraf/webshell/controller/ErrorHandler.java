@@ -1,6 +1,10 @@
 package com.teraf.webshell.controller;
 
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -26,14 +30,14 @@ public class ErrorHandler {
 
     
     @ExceptionHandler(ProblemException.class)
-    public ProblemDTO serverExceptionHandler(ProblemException ex) {
+    public ResponseEntity<ProblemDTO> serverExceptionHandler(ProblemException ex) {
         var dto = ex.toDTO();
         if (dto.getCode() >= 500)
             log.error("Experienced a fatal error", ex);
         else 
             log.warn("Experienced user error", ex);
         
-        return dto;
+        return ResponseEntity.status(ex.getCode()).body(dto);
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
@@ -41,8 +45,13 @@ public class ErrorHandler {
         return new ProblemDTO(404, "Path does not exit", "NOT_FOUND");
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ProblemDTO serverExceptionHandler(IllegalArgumentException ex) {
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler({
+            HttpMessageNotReadableException.class,
+            HttpMediaTypeNotSupportedException.class,
+            IllegalArgumentException.class
+    })
+    public ProblemDTO badRequests(Exception ex) {
         return new ProblemDTO(400, ex.getMessage(), "BAD_REQUEST");
     }
 

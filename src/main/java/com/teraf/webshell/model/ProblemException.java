@@ -30,4 +30,10 @@ public class ProblemException extends RuntimeException {
     public ProblemDTO toDTO () {
         return new ProblemDTO(code, detail, title);
     }
+
+
+    @Override
+    public String getMessage() {
+        return detail;
+    }
 }

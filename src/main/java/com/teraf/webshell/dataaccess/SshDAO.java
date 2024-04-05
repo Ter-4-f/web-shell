@@ -65,6 +65,10 @@ public class SshDAO {
                     }
                 })
                 .doOnNext(System.out::println)
+                .map(line -> {
+                    String escapeSequenceRegex = "\\x1B\\[[0-?]*[ -/]*[@-~][\\r]?";
+                    return line.replaceAll(escapeSequenceRegex, "");
+                })
                 .cache();
     }
 
