@@ -1,0 +1,103 @@
+.background {
+    background: linear-gradient(-45deg, #2d00aa, #3a0a62, #8700a9, #920909);
+    background-size: 400% 400%;
+    animation: gradient 5s ease infinite;
+}
+@keyframes gradient {
+    0% {
+        background-position: 25% 25%;
+    }
+    25% {
+        background-position: 75% 25%;
+    }
+    50% {
+        background-position: 75% 75%;
+    }
+    75% {
+        background-position: 25% 75%;
+    }
+    100% {
+        background-position: 25% 25%;
+    }
+}
+
+.selection {
+    width: calc(100% - 10px);
+    display: flex;
+    max-height: fit-content;
+    background-color: rgb(31, 0, 61);
+    color: white;
+    padding: 20px;
+    border-radius: 5px;
+    border: solid 2px rgb(18, 2, 34);
+    margin: 5px;
+}
+.selection:hover {
+    background-color: rgb(54, 7, 100);
+    box-shadow: 0px 0px 5px rgb(54, 7, 100);
+}
+.selection:active {
+    background-color: rgb(80, 14, 147);
+}
+
+.selection > * {
+    margin: 0;
+    min-height: 50px;
+    max-height: 75px;
+    font-size: 4vh;
+}
+
+.selection span {
+    vertical-align: center;
+}
+
+.start-button {
+    height: 24vh;
+    width: 24vh;
+    font-size: 9vh;
+    text-align: center;
+    border-radius: 50%;
+    background-color: rgb(255, 34, 0);
+    border: solid 2px rgba(204, 204, 204, 0.544);
+    padding: 0;
+}
+.start-button:hover {
+    background-color: rgb(255, 71, 47);
+}
+.start-button:active {
+    background-color: rgb(255, 60, 0);
+}
+
+.config {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+} 
+.wrapper {
+    width: 90%;
+    max-width: 1200px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+  
+table {
+    width: fit-content;
+    border-collapse: collapse;
+  }
+
+  td {
+    border: 0px solid transparent;
+    background-clip: padding-box;
+    text-align: left;
+    font-size: 4vh;
+    white-space: nowrap;
+  }
+  tr > td + td {
+    border-left-width: 6vw;
+  }
+  

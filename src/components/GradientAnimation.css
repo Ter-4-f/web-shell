@@ -1,0 +1,45 @@
+.gradient-container {
+    overflow: hidden;
+    position: relative;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .gradient {
+    position: absolute;     
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-position: 0 0;
+    animation-fill-mode: forwards;
+    animation: moveGradient;
+    animation-timing-function: linear;
+  }
+  .gradient.active {
+    background: linear-gradient(90deg, rgba(33,212,253,0) 0%, rgba(33,244,253,0.3) 1%, rgba(33,212,253,0) 2%);
+  }
+  .gradient.break {
+    background: linear-gradient(90deg, rgba(0, 0, 0, 0) 0%, rgb(255, 72, 0) 1%, rgba(0, 0, 0, 0) 2%);
+  }
+  
+  @keyframes moveGradient {
+    from {left: 0vw;}
+    to {left: 100vw;}
+  }
+  
+  .paused {
+    animation-play-state: paused;
+  }
+
+
+
+  
+.background-gradient.break {
+    background-color: #fd2121;
+    background-image: linear-gradient(19deg, #fd2121 0%, rgb(185, 66, 11) 100%)
+}
+  

@@ -1,0 +1,79 @@
+.terminal-container {
+    flex: 1;
+    display: flex; 
+    flex-direction: column; 
+    justify-content: start; 
+    align-items: end; 
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+.shell-headers {
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    width: 100%;
+    white-space: nowrap;
+    margin-bottom: 5px;
+}
+
+.shell-headers-content {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    width: 100%;
+    white-space: nowrap;
+    position: relative;
+    left: 0px;
+}
+
+.shell-header {
+    flex-basis: 100px;
+    flex-grow: 1;
+    flex-shrink: 0;
+    max-width: 150px;
+    height: 15px;
+    background-color: #888;
+    border-radius: 20px;
+    text-align: center;
+    line-height: 15px;
+    user-select: none;
+    font-size: 12px;
+}
+
+.shell-header.shell-plus{
+    width: 30px;
+    flex-grow: unset;
+    flex-basis: unset;
+}
+
+.shell-header.active {
+    background-color: #b2b3c4;
+}
+
+.shell-header:hover:not(.active) {
+    background-color: #696969;
+}
+
+
+.cancel-btn {
+    width: 80px;
+    height: 36px;
+    border-radius: 5px;
+    box-shadow: 2px 2px 2px 2px #696969;
+}
+
+.scroll-arrow {
+    color: white;
+    height: 100%;
+    text-align: center;
+    line-height: 15px;
+    border-radius: 3px;
+    padding: 0px 8px;
+}
+
+.scroll-arrow:hover {
+    background-color: #696969;
+
+}
+

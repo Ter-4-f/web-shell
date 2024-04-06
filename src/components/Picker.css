@@ -1,0 +1,7 @@
+.picker {
+    user-select: none;
+    color: white;
+    font-size: 15vh;
+    text-align: center;
+    touch-action: none;
+}
