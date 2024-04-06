@@ -51,7 +51,7 @@ function TerminalHeader ({ shells, onSelect, onCreateShell, onDeleteShell }) {
             <div style={{overflow: "hidden", width: "100%"}}>
                 <OverflowDetector className="shell-headers-content" onOverflowChange={handleOverflowChange}>
                     {headers}
-                    {headers.length === 0 || (headers.length > 1 && headers[0].props.name != "") 
+                    {(headers.length > 1 || headers[0].props.name != "") 
                     ?   <div className="shell-header shell-plus" onClick={onCreateShell}>+</div> 
                     :   null
                     }
@@ -80,16 +80,11 @@ export default class Terminal extends React.Component {
                 .then(response => {
                     if (response.length > 0) {
                         this.shells = [];
+                        console.log("reset");
                         response.forEach(shell => {
                             shell.name = determineShellname(shell.createdAt);
-                            console.log("BBBB",shell.name);
-                            this.shells.push(
-                                [
-                                    shell, 
-                                    <Shell ref={(ref) => this.shellRef = ref} createdAt={shell.createdAt} location={location} autoConnect={true} id={shell.id} onConnect={this.onConnect}/>
-                                ]
-                            )
-
+                            this.shells.push(<Shell key={crypto.randomUUID()} info={shell} location={location} autoConnect={true} onConnect={this.onConnect}/>);
+                            console.log("Pushed new shell", this.shells.length);
                             this.forceUpdate();
                         });
                     }
@@ -109,24 +104,13 @@ export default class Terminal extends React.Component {
         this.setState({shellIndex: index});
     };
 
-    onConnect = (shell, info) => {
-        console.log("connected", shell, info);
-        const [found, _] = this.shells.find(([info, shell]) => shell == shell);
-        if (found) {
-            console.log("found", found);
-            found.name = info.name;
-            found.id = info.id;
-            found.createdAt = info.createdAt;
-            this.setState({headerKey: this.state.headerKey + "I"})
-        }
-        
+    onCreatedSession = () => {
+        console.log("connected, shells?", this.shells.length);
+        this.forceUpdate();
     }
 
     onShellDelete (index) {
-        console.log("Pre", this.shells, index);
-        const [[removedShell, _]] = this.shells.splice(index, 1);
-
-        console.log("remoeved", removedShell);
+        const removedShell = this.shells.splice(index, 1);
         if (removedShell.id) {
             setTimeout(() => {deleteShell(removedShell.id)}, 0);
         }
@@ -140,15 +124,15 @@ export default class Terminal extends React.Component {
     }
 
     addShell () {
-        this.shells.push([{name: ""}, <Shell location={this.props.location} onConnected={(shell, info) => this.onConnect(shell, info)} />]);
+        this.shells.push(<Shell key={crypto.randomUUID()} info={{name: ""}} location={this.props.location} onCreatedSession={(shell) => this.onCreatedSession(shell)} />);
     }
 
     
     render() {
-        const [activeInfo, activeShell] = this.shells[this.state.shellIndex]
-        const headers = this.shells.map(([info, _]) => info.name);
+        const activeShell = this.shells[this.state.shellIndex]
+        const headers = this.shells.map((shell) => shell.props.info.name);
 
-        console.log("render", activeInfo);
+        console.log("render", headers);
 
         return (
             <div className="terminal-container">

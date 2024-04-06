@@ -47,6 +47,8 @@ class ShellOutput extends React.Component {
 class Shell extends React.Component {
     constructor(props) {
         super(props);
+        this.info = props.info;
+        console.log("Shell-info", props.info);
 
         this.state = {
             connection: ConnectionStatus.OFFLINE
@@ -63,8 +65,9 @@ class Shell extends React.Component {
         else
             this.state.connection = ConnectionStatus.CONNECTING;
 
-        if (this.props.id) {
-            this.output = <ShellOutput id={this.props.id} />;
+        console.log("connect:", this.info);
+        if (this.info.id) {
+            this.output = <ShellOutput id={this.info.id} />;
             if (mounted)
                 this.setState({connection: ConnectionStatus.CONNECTED});
             else
@@ -75,15 +78,14 @@ class Shell extends React.Component {
                     connection: ConnectionStatus.CONNECTED
                 });
 
-                this.id = dto.id;
-                this.createdAt = dto.createdAt;
+                this.info.id = dto.id;
+                this.info.createdAt = dto.createdAt;
+                this.info.name = determineShellname(dto.createdAt);
                 this.output = <ShellOutput id={dto.id} />;
 
-                if (this.props.setName) {
-                    this.props.setName(determineShellname(this.createdAt));
-                }
-                if (this.props.onConnected) {
-                    this.props.onConnected(this, dto);
+                if (this.props.onCreatedSession) {
+                    console.log("Created Session!");
+                    this.props.onCreatedSession();
                 }
             })
             .catch(err => {
