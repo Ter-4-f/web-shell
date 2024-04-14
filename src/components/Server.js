@@ -15,9 +15,16 @@ function ServerStatus ({ onWakeServer, onKillServer }) {
 
 
 export default function Server ({ pcName, location, insertLines, executeLines }) {
+    const [activeShell, setActiveShell] = useState(null);
 
-    const insertCommand =  (command) => {
+    const insertCommand = (command) => {
+        if (activeShell) 
+            activeShell.props.info.insertCommand(command, false);
+    };
 
+    const executeCommand = (command) => {
+        if (activeShell) 
+            activeShell.insertCommand(command, false);
     };
 
     const onKillServer =  () => {
@@ -30,13 +37,13 @@ export default function Server ({ pcName, location, insertLines, executeLines })
 
     const insertButtons = (insertLines || []).map((value, index) => {
         return (
-            <button key={index} className="insert-line-btn" onClick={insertCommand(value.value)}>{value.label}</button>
+            <button key={index} className="insert-line-btn" onClick={() => insertCommand(value.value)}>{value.label}</button>
         )
     });
 
     const executeButtons = (executeLines || []).map((value, index) => {
         return (
-            <button key={index} className="execute-line-btn" onClick={insertCommand(value.value)}>{value.label}</button>
+            <button key={index} className="execute-line-btn" onClick={() => executeCommand(value.value)}>{value.label}</button>
         )
     });
 
@@ -49,7 +56,7 @@ export default function Server ({ pcName, location, insertLines, executeLines })
                     <div className="buttons">{executeButtons}</div>
                 </div>
             </div>
-            <Terminal location={location}/>
+            <Terminal location={location} setActiveShell={setActiveShell}/>
             
             <ServerStatus/>
         </div>

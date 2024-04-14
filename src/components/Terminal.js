@@ -69,7 +69,6 @@ export default class Terminal extends React.Component {
         super(props);
         // const [initShellName, setInitShellName] = useState("");
         this.shells = [];
-        this.addShell();
         
         this.state = {
             shellIndex: 0,
@@ -87,7 +86,11 @@ export default class Terminal extends React.Component {
                             console.log("Pushed new shell", this.shells.length);
                             this.forceUpdate();
                         });
+                    } else {
+                        this.addShell();
                     }
+                    
+                    this.props.setActiveShell(_ => this.shells[0]);
                 })
     }
 
@@ -99,13 +102,18 @@ export default class Terminal extends React.Component {
     onCancel = () => {
         
     };
+
+    onShellInit = (shell) => {
+        this.props.onShellChange(_ => shell);
+        
+    };
     
     onSelect = (index) => {
+        this.props.onShellChange(_ => this.shells[shellIndex].info.shell);
         this.setState({shellIndex: index});
     };
 
     onCreatedSession = () => {
-        console.log("connected, shells?", this.shells.length);
         this.forceUpdate();
     }
 
@@ -124,13 +132,18 @@ export default class Terminal extends React.Component {
     }
 
     addShell () {
-        this.shells.push(<Shell key={crypto.randomUUID()} info={{name: ""}} location={this.props.location} onCreatedSession={(shell) => this.onCreatedSession(shell)} />);
+        this.shells.push(<Shell key={crypto.randomUUID()} info={{name: ""}} autoConnect={true} location={this.props.location} onCreatedSession={(shell) => this.onCreatedSession(shell)} />);
     }
 
     
     render() {
-        const activeShell = this.shells[this.state.shellIndex]
-        const headers = this.shells.map((shell) => shell.props.info.name);
+        let activeShell = <Shell autoConnect={false} info={{}} location={this.props.location} />
+        let headers = [""];
+        if (this.shells.length !== 0) {
+            activeShell = this.shells[this.state.shellIndex]
+            headers = this.shells.map((shell) => shell.props.info.name);
+        }
+        
 
         console.log("render", headers);
 

@@ -9,6 +9,7 @@
     "eject": "react-scripts eject"
   },
   "dependencies": {
+    "ansi-to-html": "^0.7.2",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-overflow": "^0.2.1",

@@ -22,37 +22,40 @@
     flex-direction: column;
 }
 .output > *{
-    color: #0f0;
+    color: white;
     display: inline;
-    max-width: 100%; /* Adjust this value according to your needs */
+    max-width: 100%; 
     white-space: pre-wrap;
     word-wrap: break-word;
+    font-size: 18px;
+    line-height: 18px;
 }
 
 .output-line {
-    height: 32px;
+    width: fit-content;
+    vertical-align: middle;
 }
 
-.input-line {
-  visibility: hidden;
-  white-space: nowrap
+.shell-input {
+    background-color: black;
+    border: none;
+    outline: none;
+    font-size: 18.4px;
 }
 
-.input-line span,
-.input-line input {
-  color: #0f0;
-  padding-right: 5px;
+.lastLine {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    margin-top: 5px;
+    color: #0f0;
 }
 
-input {
-  background-color: #000;
-  border: none;
-  color: #fff;
-  outline: none;
-  font-size: 16px;
-  width: 100%;
+.lastLine > *{
+    font-size: 20px;
+    line-height: 20px;
+    height: 20px;
 }
-
 
 
 

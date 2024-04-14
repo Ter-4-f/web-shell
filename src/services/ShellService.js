@@ -17,11 +17,7 @@ async function cancelCommand (path, shellId) {
 
 export async function createShell(location, command) {
     const requestOptions = {
-        method: 'POST',
-        body: `{"command": "${command}"}`,
-        headers: {
-            "Content-Type": "application/json"
-        }
+        method: 'POST'
     };
     const path = `/shells?host=${location.host}&port=${location.port}`;
 
@@ -33,6 +29,25 @@ export async function createShell(location, command) {
 
             const text = await response.text();
             throw new Error(text);
+        });
+}
+
+export async function sendCommand(shellId, command) {
+    const requestOptions = {
+        method: 'POST',
+        body: `{"command": "${command}"}`,
+        headers: {
+            "Content-Type": "application/json"
+        }
+    };
+    const path = `/shells/${shellId}`;
+
+    return fetch(backendBasePath + path, requestOptions)
+        .then(async response => {
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(text);
+            }
         });
 }
 
@@ -89,15 +104,14 @@ export async function readOutput(id, onNext) {
             }
 
             // Process the current chunk data
-            console.log("Value: \n", value);
             const chunkText = decoder.decode(value);
             console.log("Chunk: \n", chunkText);
             const result = checkBody(chunkText, first);
-
-            if (onNext)
-                result.forEach(line => {
-                    onNext(line);
-                });                
+            console.log("Result: \n", result);
+            result.forEach(element => {
+                if (onNext)
+                    onNext(element);
+            });
         }
     } catch (err) {
         console.log("Unable to read response: ");
@@ -109,17 +123,21 @@ export async function readOutput(id, onNext) {
 function checkBody (body) {
     let bodyLines = body.split('\n');
 
-    bodyLines = bodyLines
-    // .map(line => line.trim())
-                         .map(line => {
-                            if (line.startsWith("data:")) {
-                                return line.replace("data:", "");
-                            }
-                            return line;
-                         })
-                         .filter(line => line !== "");
-    console.log("Body: \n", bodyLines);
 
+    for (let index = 0; index < bodyLines.length; index++) {
+        let line = bodyLines[index];
+        if (line.startsWith("data:")) {
+            line = line.replace("data:", "");
+            bodyLines[index] = line + "\n";
+        }
+
+        if (line.includes("\u001b[?2004l") && line.includes("\u001b[?2004h")) {
+            const splitIndex = line.indexOf("\u001b[?2004h");
+            bodyLines.splice(index, 1, line.substring(0, splitIndex), line.substring(splitIndex));
+        }
+        
+
+    }
     return bodyLines;
 }
 
