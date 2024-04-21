@@ -9,7 +9,9 @@ import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
+import reactor.util.annotation.Nullable;
+
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -19,15 +21,25 @@ public class CliBC {
     private final SshDAO sshDAO;
     private final Config config;
 
-    public Mono<SshConnection> executeCommand (String cli, ServerData location) {
-        return sshDAO.createConnection(location.getHost(), location.getPort(), location.getUsername(), location.getPassword())
+    public Mono<SshConnection> executeCommand(@Nullable String cli, ServerData location) {
+        var connection = sshDAO.createConnection(location.getHost(), location.getPort(), location.getUsername(), location.getPassword())
                 .onErrorMap(e -> new ProblemException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to connect to server.", e))
-                .doOnNext(session -> {
-                    var output = sshDAO.executeCommand(session.getShell(), cli);
-                    session.setOutput(output);
-                    output.subscribeOn(Schedulers.boundedElastic()).subscribe();
-                })
                 .doOnNext(connectionDB::saveConnection);
+
+        if (cli != null && !cli.isBlank())
+            connection = connection.doOnNext(session -> sshDAO.executeCommand(session.getShell(), cli));
+
+        return connection;
+    }
+
+    public Mono<Boolean> executeCommand(UUID shellId, String command, boolean asSignal) {
+        var connection = connectionDB.loadConnection(shellId)
+                .orElseThrow(() -> new ProblemException(HttpStatus.NOT_FOUND, "No open shell with the provided id."));
+
+        if (asSignal)
+            return sshDAO.executeSignal(connection.getShell(), command);
+        else
+            return sshDAO.executeCommand(connection.getShell(), command);
     }
 
     public Mono<String> killPc (ServerData location) {

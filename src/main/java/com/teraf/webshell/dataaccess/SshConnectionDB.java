@@ -27,4 +27,9 @@ public class SshConnectionDB {
         cache.put(connection.getId(), connection);
     }
 
+
+    public void deleteConnection (UUID id) {
+        cache.remove(id);
+    }
+
 }

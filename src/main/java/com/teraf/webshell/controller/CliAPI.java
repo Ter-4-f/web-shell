@@ -1,6 +1,7 @@
 package com.teraf.webshell.controller;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import com.teraf.webshell.config.Config;
@@ -39,12 +40,21 @@ public class CliAPI {
     }
 
     @PostMapping("/shells")
-    public Mono<ResponseEntity<ConnectionDTO>> createShell (@RequestParam("host") String host, @RequestParam("port") int port, @RequestBody CommandRequest request) {
+    public Mono<ResponseEntity<ConnectionDTO>> createShell (@RequestParam("host") String host, @RequestParam("port") int port, @RequestBody(required = false) CommandRequest request) {
         ServerData location = LocationUtil.checkLocation(host, port, this.config.getLocations());
+        var command = Optional.ofNullable(request)
+                .map(CommandRequest::getCommand)
+                .orElse(null);
 
-        return cliBC.executeCommand(request.getCommand(), location)
+        return cliBC.executeCommand(command, location)
                 .map(SshConnection::toDTO)
                 .map(ResponseEntity::ok);
+    }
+
+    @PostMapping("/shells/{shell-id}")
+    public Mono<ResponseEntity<Void>> executeCommand (@PathVariable(value="shell-id") String shellId, @RequestBody CommandRequest request, @RequestParam(value = "asSignal", required = false) Boolean asSignal) {
+        return cliBC.executeCommand(UUID.fromString(shellId), request.getCommand(), Boolean.TRUE.equals(asSignal))
+                .map(_ -> ResponseEntity.noContent().build());
     }
 
 
@@ -57,5 +67,11 @@ public class CliAPI {
     public Mono<ResponseEntity<Void>> cancelCommand (@PathVariable(value="shell-id") String shellId) {
         return shellBC.cancelCommand(UUID.fromString(shellId))
                 .map(_ -> ResponseEntity.noContent().build());
+    }
+
+    @DeleteMapping(value = "/shells/{shell-id}")
+    public Mono<ResponseEntity<Void>> deleteShell (@PathVariable(value="shell-id") String shellId) {
+        shellBC.deleteShell(UUID.fromString(shellId));
+        return Mono.just(ResponseEntity.noContent().build());
     }
 }

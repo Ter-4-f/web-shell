@@ -41,6 +41,7 @@ public class ErrorHandler {
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
     public ProblemDTO serverExceptionHandler(NoResourceFoundException ex) {
         return new ProblemDTO(404, "Path does not exit", "NOT_FOUND");
     }
@@ -55,6 +56,7 @@ public class ErrorHandler {
         return new ProblemDTO(400, ex.getMessage(), "BAD_REQUEST");
     }
 
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ProblemDTO serverExceptionHandler(HttpRequestMethodNotSupportedException ex) {
         return new ProblemDTO(405, ex.getMessage(), "METHODE_NOT_FOUND");

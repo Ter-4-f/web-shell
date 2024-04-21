@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -35,41 +36,65 @@ public class SshDAO {
         ChannelShell channel = (ChannelShell) session.openChannel("shell");
 //        channel.setPty(true); // with sending 3
         channel.connect();
+        channel.start();
 
-        return Mono.just(SshConnection.builder()
-                .id(UUID.randomUUID())
-                .session(session)
-                .shell(channel)
-                .output(Flux.empty())
-                .createdAt(LocalDateTime.now())
-                .build()
-        );
-    }
-
-
-    @SneakyThrows
-    public Flux<String> executeCommand(ChannelShell channel, String command) {
-        OutputStream out = channel.getOutputStream();
-        sendCommand(out, command);
-
-        return Flux.<String>create(emitter -> {
+        var output = Flux.<String>create(emitter -> {
                     try {
-                        BufferedReader reader = new BufferedReader(new InputStreamReader(channel.getInputStream()));
-                        String line;
-                        while ((line = reader.readLine()) != null) {
-                            emitter.next(line);
+                        var reader = new InputStreamReader(channel.getInputStream());
+                        var buffer = new char[4096];
+                        int bytesRead;  
+
+                        // Loop until the end of the stream is reached
+                        while ((bytesRead = reader.read(buffer)) != -1) {
+                            emitter.next(new String(buffer, 0,  bytesRead));
                         }
                         emitter.complete();
                     } catch (Exception e) {
                         emitter.error(e);
                     }
                 })
+//                .flatMap(line -> {
+//                    String escapeSequenceRegex = "\\x1B\\[[0-?]*[ -/]*[@-~][\\r]?";
+//                    var result = line.replaceAll(escapeSequenceRegex, "");
+//                    if (result.isBlank())
+//                        return Mono.empty();
+//                    else
+//                        return Mono.just(result);
+//                })
+//                .filter(line -> !line.isBlank())
+                // TODO filter out all commands, to have a clear history
+                .filter(line -> !"\u0007".equals(line)) // filter out bell sound
                 .doOnNext(System.out::println)
-                .map(line -> {
-                    String escapeSequenceRegex = "\\x1B\\[[0-?]*[ -/]*[@-~][\\r]?";
-                    return line.replaceAll(escapeSequenceRegex, "");
-                })
                 .cache();
+
+        output.subscribeOn(Schedulers.boundedElastic()).subscribe();
+
+        return Mono.just(SshConnection.builder()
+                .id(UUID.randomUUID())
+                .session(session)
+                .shell(channel)
+                .output(output)
+                .createdAt(LocalDateTime.now())
+                .build()
+        );
+    }
+
+
+
+    public Mono<Boolean> executeCommand(ChannelShell channel, String command) {
+        System.out.println("AS COMMAND");
+        return executeSignal(channel, STR."\{command}\n");
+    }
+
+    public Mono<Boolean> executeSignal(ChannelShell channel, String signal) {
+        try {
+            OutputStream out = channel.getOutputStream();
+            out.write(signal.getBytes());
+            out.flush();
+            return Mono.just(true);
+        } catch (Exception e) {
+            return Mono.error(new ProblemException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to send command to remote server", e));
+        }
     }
 
     @SneakyThrows
@@ -109,24 +134,6 @@ public class SshDAO {
     }
 
 
-
-
-
-
-
-
-
-
-
-
-    private void sendCommand(OutputStream out, String command) {
-        try {
-            out.write((command + "\n").getBytes());
-            out.flush();
-        } catch (Exception e) {
-            throw new ProblemException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to send command to remote server", e);
-        }
-    }
 
     @SneakyThrows
     private String readOutput(InputStream in) {

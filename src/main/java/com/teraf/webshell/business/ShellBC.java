@@ -21,17 +21,31 @@ import reactor.core.publisher.Mono;
 public class ShellBC {
 
     private final SshDAO sshDAO;
-    private final SshConnectionDB connectionDAO;
+    private final SshConnectionDB connectionDB;
     private final Config config;
 
     public Flux<SshConnection> loadShells (@NonNull ServerData location) {
-        return connectionDAO.loadConnections()
-                .filter(connection -> connection.isConnectedToServer(location));
+        return connectionDB.loadConnections()
+                .filter(connection -> connection.isConnectedToServer(location))
+                .filter(connection -> connection.getShell().isConnected());
     }
 
     public SshConnection loadConnection(@NonNull UUID id) {
-        return connectionDAO.loadConnection(id)
+        return connectionDB.loadConnection(id)
+                .filter(connection -> connection.getShell().isConnected())
                 .orElseThrow(() -> new ProblemException(HttpStatus.NOT_FOUND, STR."Shell with id '\{id.toString()}' does not exist"));
+    }
+
+    public boolean deleteShell(@NonNull UUID id) {
+        var connection = connectionDB.loadConnection(id)
+                .orElseThrow(() -> new ProblemException(HttpStatus.NOT_FOUND, STR."Shell with id '\{id.toString()}' does not exist"));
+
+        connection.getShell().disconnect();
+        connection.getSession().disconnect();
+
+        connectionDB.deleteConnection(id);
+
+        return true;
     }
 
     public Flux<String> loadActiveOutput (UUID id) {
