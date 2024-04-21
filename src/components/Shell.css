@@ -29,32 +29,46 @@
     word-wrap: break-word;
     font-size: 18px;
     line-height: 18px;
+    margin-bottom: 3px;
 }
 
 .output-line {
     width: fit-content;
     vertical-align: middle;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 18px;
+    line-height: 18px;
 }
 
 .shell-input {
     background-color: black;
     border: none;
     outline: none;
-    font-size: 18.4px;
+    font-size: 18px;
+    line-height: 18px;
+    height: 18px;
+    flex: 1;
 }
 
 .lastLine {
     display: flex;
     flex-direction: row;
+    align-items: center;
     gap: 5px;
-    margin-top: 5px;
     color: #0f0;
 }
 
-.lastLine > *{
-    font-size: 20px;
-    line-height: 20px;
-    height: 20px;
+.prompt-location {
+    color: #14c60d;
+}
+.prompt-path {
+    color: #3478ff;
+    margin-right: 1px;
+}
+.prompt-text {
+    color: white;
+    margin: 0px 1px;
 }
 
 

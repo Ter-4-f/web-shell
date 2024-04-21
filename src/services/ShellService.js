@@ -1,3 +1,6 @@
+import { ShellInfo } from "../components/Shell";
+import determineShellname from "../utils/ShellUtils";
+
 const backendBasePath = "http://localhost:8080";
 
 async function cancelCommand (path, shellId) {
@@ -15,7 +18,7 @@ async function cancelCommand (path, shellId) {
         });
 }
 
-export async function createShell(location, command) {
+export async function createShell(location) {
     const requestOptions = {
         method: 'POST'
     };
@@ -29,6 +32,12 @@ export async function createShell(location, command) {
 
             const text = await response.text();
             throw new Error(text);
+        })
+        .then(shell => {
+            const name = determineShellname(shell.createdAt);
+            const info = new ShellInfo(shell.id, name, () => {});
+            connectionManager.addShell(info);
+            return info;
         });
 }
 
@@ -75,8 +84,35 @@ export async function loadShells (location) {
             const bTime = new Date(b.createdAt).getTime();
 
             return aTime - bTime;
-          }));
+          }))
+          .then(response => response.map(shell => {
+                const name = determineShellname(shell.createdAt);
+                const info = new ShellInfo(shell.id, name, () => {});
+                connectionManager.addShell(info);
+                return info;
+            })
+          );
 }
+
+class ConnectionManager {
+    constructor () {
+        this.connections = {};
+    }
+    
+    addShell (shellInfo) {
+        this.connections[shellInfo.shellId] = shellInfo;
+        readOutput(shellInfo.shellId, (line) => shellInfo.addLine(line));
+    }
+
+    getShell (shellId) {
+        return this.connections[shellId];
+    }
+
+
+}
+export const connectionManager = new ConnectionManager();
+
+
 
 export async function readOutput(id, onNext) {
     const requestOptions = {
@@ -87,12 +123,15 @@ export async function readOutput(id, onNext) {
     };
     const path = `/shells/${id}/output`;
 
+    console.log("read");
     const response = await fetch(backendBasePath + path, requestOptions);
+    console.log("after await");
     const reader = response.body.getReader();
     
     const decoder = new TextDecoder('utf8');
     let first = true;
     try {
+        console.log("read parts");
         while (true) {
             const { done, value } = await reader.read();
             

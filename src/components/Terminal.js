@@ -3,14 +3,11 @@ import { ReactComponent  as ResumeIcon } from '../icons/resume.svg';
 import { ReactComponent  as PauseIcon } from '../icons/pause.svg';
 import { ReactComponent  as ReloadIcon } from '../icons/reload.svg';
 import { ReactComponent  as CancelIcon } from '../icons/x.svg';
-import Shell from './Shell';
+import Shell, { ShellInfo } from './Shell';
 import './Terminal.css';
-import { deleteShell, loadShells } from '../services/ShellService';
+import { createShell, deleteShell, loadShells } from '../services/ShellService';
 import { OverflowDetector } from 'react-overflow';
 import determineShellname from '../utils/ShellUtils';
-
-
-
 
 
 function TerminalHeader ({ shells, onSelect, onCreateShell, onDeleteShell }) {
@@ -27,7 +24,6 @@ function TerminalHeader ({ shells, onSelect, onCreateShell, onDeleteShell }) {
 
     function handleOverflowChange(isOverflowed) {
         setIsOverflow(isOverflowed);
-        console.log("Overflow", isOverflowed);
     }
 
     const onHeaderClick = (index) => {
@@ -78,38 +74,20 @@ export default class Terminal extends React.Component {
         loadShells(props.location)
                 .then(response => {
                     if (response.length > 0) {
-                        this.shells = [];
-                        console.log("reset");
-                        response.forEach(shell => {
-                            shell.name = determineShellname(shell.createdAt);
-                            this.shells.push(<Shell key={crypto.randomUUID()} info={shell} location={location} autoConnect={true} onConnect={this.onConnect}/>);
-                            console.log("Pushed new shell", this.shells.length);
-                            this.forceUpdate();
-                        });
-                    } else {
-                        this.addShell();
+                        response.forEach(shell => this.shells.push(shell));
+                        this.props.setActiveShell(this.shells[0]);
+                        this.forceUpdate();
                     }
-                    
-                    this.props.setActiveShell(_ => this.shells[0]);
                 })
     }
-
-
-    insertCommand = () => {
-        
-    };
 
     onCancel = () => {
         
     };
-
-    onShellInit = (shell) => {
-        this.props.onShellChange(_ => shell);
-        
-    };
     
     onSelect = (index) => {
-        this.props.onShellChange(_ => this.shells[shellIndex].info.shell);
+        console.log("index", this.shells[index]);
+        this.props.setActiveShell(this.shells[index]);
         this.setState({shellIndex: index});
     };
 
@@ -131,28 +109,63 @@ export default class Terminal extends React.Component {
         this.forceUpdate();
     }
 
+    createShell () {
+        this.addShell();
+        this.setState({headerKey: this.state.headerKey + "I"});
+    }
+
     addShell () {
-        this.shells.push(<Shell key={crypto.randomUUID()} info={{name: ""}} autoConnect={true} location={this.props.location} onCreatedSession={(shell) => this.onCreatedSession(shell)} />);
+        createShell(this.props.location)
+                .then(shell => {
+                    this.shells.push(shell);
+                    this.forceUpdate();
+                })
+                .catch(err => alert("Unable to connecto to the server.", err));
+    }
+
+    onCreateShell () {
+        createShell(this.props.location, "").then(dto => {
+            this.setState({
+                connection: ConnectionStatus.CONNECTED
+            });
+
+            this.info.id = dto.id;
+            this.info.createdAt = dto.createdAt;
+            this.info.name = determineShellname(dto.createdAt);
+
+            if (this.props.onCreatedSession) {
+                this.props.onCreatedSession();
+            }
+        })
+        .catch(err => {
+            this.setState({connection: ConnectionStatus.OFFLINE});
+            alert(err);                
+        });            
     }
 
     
     render() {
-        let activeShell = <Shell autoConnect={false} info={{}} location={this.props.location} />
-        let headers = [""];
-        if (this.shells.length !== 0) {
-            activeShell = this.shells[this.state.shellIndex]
-            headers = this.shells.map((shell) => shell.props.info.name);
-        }
+        const headers = this.shells.map((shell) => shell.name);
+        const shell =   <div className="terminal-container">
+                            <TerminalHeader key={this.headerKey} shells={headers} onSelect={this.onSelect} onDeleteShell={(shell) => this.onShellDelete(shell)} onCreateShell={() => this.createShell()}/>
+                            <Shell key={crypto.randomUUID()} info={this.shells[this.state.shellIndex]} location={location} autoConnect={true} onConnect={this.onConnect}/>
+                            <button className="cancel-btn warn" onClick={() => this.onCancel()}>cancel</button>            
+                        </div>;
+
+        const connectButton = <div className='hacker-body'>
+            <button className='connect-btn' onClick={() => this.addShell()}>&gt;_ Start SSH</button>
+            <div className="noise"/>
+        </div>;
         
 
-        console.log("render", headers);
-
         return (
-            <div className="terminal-container">
-                <TerminalHeader key={this.headerKey} shells={headers} onSelect={this.onSelect} onDeleteShell={(shell) => this.onShellDelete(shell)}/>
-                {activeShell}       
-                <button className="cancel-btn warn" onClick={() => this.onCancel()}>cancel</button>            
+            <div className='terminal'>
+                { this.shells.length === 0 
+                ? connectButton
+                : shell
+                }
             </div>
+            
         );
     }
 };

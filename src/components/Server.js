@@ -14,51 +14,51 @@ function ServerStatus ({ onWakeServer, onKillServer }) {
 }
 
 
-export default function Server ({ pcName, location, insertLines, executeLines }) {
-    const [activeShell, setActiveShell] = useState(null);
+export default class Server extends React.Component {
+// export default function Server ({ pcName, location, insertLines, executeLines }) {
 
-    const insertCommand = (command) => {
-        if (activeShell) 
-            activeShell.props.info.insertCommand(command, false);
+    constructor(props) {
+        super(props);
+        // const [initShellName, setInitShellName] = useState("");
+        this.activeShell = null;
+
+        this.insertButtons = (this.props.insertLines || []).map((value, index) => {
+            return (
+                <button key={index} className="insert-line-btn" onClick={() => this.insertCommand(value.value)}>{value.label}</button>
+            )
+        });
+
+        this.executeButtons = (this.props.executeLines || []).map((value, index) => {
+            return (
+                <button key={index} className="execute-line-btn" onClick={() => this.executeCommand(value.value)}>{value.label}</button>
+            )
+        });
+    }
+
+    insertCommand (command) {
+        if (this.activeShell) 
+            this.activeShell.props.info.insertCommand(command, false);
     };
 
-    const executeCommand = (command) => {
-        if (activeShell) 
-            activeShell.insertCommand(command, false);
+    executeCommand (command) {
+        if (this.activeShell) 
+            this.activeShell.executeCVooomand(command, false);
     };
 
-    const onKillServer =  () => {
-
-    };
-
-    const onWakeServer =  () => {
-
-    };
-
-    const insertButtons = (insertLines || []).map((value, index) => {
+    render () {
         return (
-            <button key={index} className="insert-line-btn" onClick={() => insertCommand(value.value)}>{value.label}</button>
-        )
-    });
-
-    const executeButtons = (executeLines || []).map((value, index) => {
-        return (
-            <button key={index} className="execute-line-btn" onClick={() => executeCommand(value.value)}>{value.label}</button>
-        )
-    });
-
-    return (
-        <div className="server-entry">
-            <div>
-                <h1>{pcName}</h1>
-                <div className='button-grid'>   
-                    <div className="buttons">{insertButtons}</div>
-                    <div className="buttons">{executeButtons}</div>
+            <div className="server-entry">
+                <div>
+                    <h1>{this.props.pcName}</h1>
+                    <div className='button-grid'>   
+                        <div className="buttons">{this.insertButtons}</div>
+                        <div className="buttons">{this.executeButtons}</div>
+                    </div>
                 </div>
+                <Terminal location={this.props.location} setActiveShell={(shell) => this.activeShell = shell}/>
+                
+                <ServerStatus/>
             </div>
-            <Terminal location={location} setActiveShell={setActiveShell}/>
-            
-            <ServerStatus/>
-        </div>
-    );
+        );
+    }
 };

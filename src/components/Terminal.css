@@ -1,3 +1,11 @@
+.terminal {
+    flex: 1;
+    display: flex; 
+    justify-content: center; 
+    align-items: start; 
+    overflow: hidden;
+    margin-top: 20px;
+}
 .terminal-container {
     flex: 1;
     display: flex; 
@@ -5,7 +13,6 @@
     justify-content: start; 
     align-items: end; 
     overflow: hidden;
-    margin-top: 20px;
 }
 
 .shell-headers {
@@ -75,5 +82,68 @@
 .scroll-arrow:hover {
     background-color: #696969;
 
+}
+
+.connection-btn {
+    background-color: black;
+}
+
+
+
+
+
+/* Terminbal Connect */
+@import 'https://fonts.googleapis.com/css?family=Inconsolata';
+
+.hacker-body {
+    position: relative;
+    border: #b2b3c4 5px solid;
+    border-radius: 15px;
+    margin-top: 20px;
+    max-width: 600px;
+  box-sizing: border-box;
+  flex: 1;
+  align-self: stretch;
+  min-height: 10vh;
+  background-color: #000000;
+  background-image: radial-gradient(#11581E, #041607), url("https://media.giphy.com/media/oEI9uBYSzLpBK/giphy.gif"); /* noise */
+  background-repeat: no-repeat;
+  background-size: cover;
+  font-family: 'Inconsolata', Helvetica, sans-serif;
+  font-size: 1.5rem;
+  color: rgba(128, 255, 128, 0.8);
+  text-shadow:
+      0 0 1ex rgba(51, 255, 51, 1),
+      0 0 2px rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+
+.noise {
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-image: url("https://media.giphy.com/media/oEI9uBYSzLpBK/giphy.gif");
+  background-repeat: no-repeat;
+  background-size: cover;
+  opacity: .02;
+}
+
+.connect-btn {
+    background: none;
+    border: none;
+    box-shadow: none;
+    font-size: 4vh;
+    color: white;
+    -webkit-text-fill-color: white;
+    border-radius: 10px;
+    padding: 10px;
+    width: fit-content;
+    height: fit-content;
 }
 
