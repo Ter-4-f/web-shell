@@ -4,7 +4,7 @@ import { ReactComponent  as PauseIcon } from '../icons/pause.svg';
 import { ReactComponent  as ReloadIcon } from '../icons/reload.svg';
 import { ReactComponent  as CancelIcon } from '../icons/x.svg';
 import './Shell.css';
-import { connectionManager, createShell, readOutput, sendCommand } from '../services/ShellService';
+import { connectionManager, createShell, readOutput, sendCommand, sendSignal } from '../services/ShellService';
 import determineShellname from '../utils/ShellUtils';
 import AnsiConverter from 'ansi-to-html';
 
@@ -20,7 +20,6 @@ const promptPattern = /^([^@]+@[^:]+):(.+)\$(.*)$/;
 
 function formattedPrompt (prompt) {
     const match = prompt.match(promptPattern);
-    console.log("Match", match, prompt);
     if (match) 
         return <>
             <span className='prompt-location'>{match[1]}</span>
@@ -41,6 +40,7 @@ export class ShellInfo {
         this.onNext = onNext;
         this.output = [];
         this.cwd = "";
+        this.input = "";
         this.isInputVisible = false;
         this.insertModeOn = false;
         this.ansiConverter = new AnsiConverter();
@@ -54,22 +54,38 @@ export class ShellInfo {
         if (line.includes("\u001b[?2004l")) {
             this.insertModeOn = false;
         }
+        if (line.includes("\u0008")) {
+            for (let i = 0; i < line.length; i++) {
+                if (this.input.length > 0 && line.charAt(i) === "\u0008") {
+                    this.input = this.input.substring(0, this.input.length - 1)
+                }
+            }
+        }
 
         line = line.replace("\u001b[?2004h", "")
                 .replace("\u001b[?2004l", "")
+                .replaceAll("\u0000", "")
+                .replaceAll("\u0008", "")
+                .replaceAll("\u001b[K", "")
                 .trim();
 
         if (this.insertModeOn) {
-            if (sshPromptPattern.test(line)) 
-                line += " ";
-
-            this.cwd += line;
+            if (sshPromptPattern.test(line))  {
+                console.log("CWD", line);
+                this.cwd = line + " ";
+            }
+            else if (line != "") {
+                console.log("INPUT", line);
+                this.input = line;
+            }
+                
+            
             if (this.onUpdate)
                 this.onUpdate();
         } else {
             if (this.cwd != "") {
-                console.log("Pish", this.cwd);
-                this.output.push(<div key={crypto.randomUUID()} className='stdout'>{formattedPrompt(this.cwd)}</div>);
+                this.output.push(<div key={crypto.randomUUID()} className='stdout'>{formattedPrompt(this.cwd + this.input)}</div>);
+                this.input = "";
                 this.cwd = "";
             }
 
@@ -117,7 +133,6 @@ class Shell extends React.Component {
 
     focusShell (shell) {
         const collection = shell.target.getElementsByClassName('shell-input');
-        console.log("Taerget", collection);
 
         if (collection.length === 1) {
             collection[0].focus();
@@ -130,21 +145,37 @@ class Shell extends React.Component {
 
     handleKeyDown = (e) => {
         if (e.key === 'Enter') {
-            const command = e.target.value
-            e.target.value = "";
-
-            console.log('Enter!', command);
-            sendCommand(this.info.shellId, command)
-                .catch(err => {
-                    alert("Unable to execute command", err)
-                });
+            this.handleEnter(e)
         }
+        else if (e.key === 'ArrowUp') {
+            sendSignal(this.info.shellId, "\\u001b[A")
+                    .catch(err => {
+                        alert("Unable to send signal", err)
+                    });
+        }
+        else if (e.key === 'ArrowDown') {
+            sendSignal(this.info.shellId, "\\u001b[B")
+                    .catch(err => {
+                        alert("Unable to send signal", err)
+                    });
+        }
+    }
+
+    handleEnter () {
+        const command = this.info.input
+        this.info.input = "";
+
+        console.log('Enter!', command);
+        sendCommand(this.info.shellId, command)
+            .catch(err => {
+                alert("Unable to execute command", err)
+            });
     }
 
     render() {
         const cwdAndInput = <div className='lastLine'>
                                 <div className='output-line prompt'>{formattedPrompt(this.info.cwd)}</div>
-                                <input type="text" className='shell-input' autoFocus onKeyDown={this.handleKeyDown} />
+                                <input type="text" className='shell-input' autoFocus onKeyDown={this.handleKeyDown} onInput={(e) => {this.info.input = e.target.value; this.forceUpdate();}} value={this.info.input}/>
                             </div>;
 
         return (

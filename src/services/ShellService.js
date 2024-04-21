@@ -60,6 +60,25 @@ export async function sendCommand(shellId, command) {
         });
 }
 
+export async function sendSignal(shellId, signal) {
+    const requestOptions = {
+        method: 'POST',
+        body: `{"command": "${signal}"}`,
+        headers: {
+            "Content-Type": "application/json"
+        }
+    };
+    const path = `/shells/${shellId}?asSignal=true`;
+
+    return fetch(backendBasePath + path, requestOptions)
+        .then(async response => {
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(text);
+            }
+        });
+}
+
 export async function deleteShell(id) {
     const requestOptions = {method: 'DELETE'};
     const path = `/shells/${id}`;
