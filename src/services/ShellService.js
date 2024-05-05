@@ -135,6 +135,7 @@ export const connectionManager = new ConnectionManager();
 
 export async function readOutput(id, onNext) {
     const requestOptions = {
+        keepalive: true,
         method: 'GET',
         headers: {
             "Content-Type": "application/json"
@@ -173,7 +174,7 @@ export async function readOutput(id, onNext) {
         }
     } catch (err) {
         console.log("Unable to read response: ");
-        console.log(err);
+        console.log(err, JSON.stringify(err));
     }
 }
 

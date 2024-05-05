@@ -45,6 +45,15 @@ export class ShellInfo {
         this.insertModeOn = false;
         this.ansiConverter = new AnsiConverter();
         this.connection = ConnectionStatus.OFFLINE;
+        this.scrollToBottom = true;
+    }
+
+    insertCommand (value, execute) {
+        this.input = value;
+        if (execute)
+            this.handleEnter();
+
+        this.onUpdate();
     }
 
     addLine (line) {
@@ -100,6 +109,7 @@ export class ShellInfo {
                 htmlLine = <div key={crypto.randomUUID()} className='stdout' dangerouslySetInnerHTML={{__html: formatted}} />;
 
             this.output.push(htmlLine);
+
             if (this.onUpdate) {
                 this.onUpdate();
             };
@@ -113,8 +123,9 @@ class Shell extends React.Component {
     constructor(props) {
         super(props);
         this.info = connectionManager.getShell(props.info.shellId);
-        this.info.insertCommand = this.insertCommand;
+        this.autoScroll = true;
         this.info.onUpdate = () => this.forceUpdate();
+        this.info.handleEnter = () => this.handleEnter();
     }
 
     renderOutputs () {
@@ -139,10 +150,6 @@ class Shell extends React.Component {
         }
     }
 
-    insertCommand (command, execute) {
-        console.log("Execute ", command, execute);
-    }
-
     handleKeyDown = (e) => {
         if (e.key === 'Enter') {
             this.handleEnter(e)
@@ -165,24 +172,48 @@ class Shell extends React.Component {
         const command = this.info.input
         this.info.input = "";
 
-        console.log('Enter!', command);
         sendCommand(this.info.shellId, command)
             .catch(err => {
                 alert("Unable to execute command", err)
             });
     }
 
+    // componentDidUpdate () {
+    //     console.log("===== Update");
+    //     const outElement = this.info.scrollMark;
+    //     if (this.info.scrollToBottom) {
+    //         if (outElement) {
+    //             console.log("=========================================================");
+    //             outElement.scrollIntoView = outElement.scrollBackup;
+    //             outElement.scrollIntoView({ behavior: "smooth" });
+    //         }
+    //     } else {
+            
+    //     }
+    // }
+    
+    onScroll (e) {
+        if (e.deltaY < 0) {
+            this.autoScroll = false;
+        } else {
+            const outElement = document.getElementById(this.info.shellId + '_shell');
+            if (outElement) 
+                this.autoScroll = Math.abs(outElement.scrollHeight - outElement.scrollTop - outElement.clientHeight) - e.deltaY <= 1;                
+        }
+    }
+
     render() {
         const cwdAndInput = <div className='lastLine'>
                                 <div className='output-line prompt'>{formattedPrompt(this.info.cwd)}</div>
-                                <input type="text" className='shell-input' autoFocus onKeyDown={this.handleKeyDown} onInput={(e) => {this.info.input = e.target.value; this.forceUpdate();}} value={this.info.input}/>
+                                <input type="text" className='shell-input'  onKeyDown={this.handleKeyDown} onInput={(e) => {this.info.input = e.target.value; this.forceUpdate();}} value={this.info.input}/>
                             </div>;
 
         return (
-            <div className="shell" onClick={this.focusShell}>
-                <div className="outputs">
+            <div id={this.props.info.shellId + '_shell'} className="shell" onClick={this.focusShell} onWheel={(e) => {this.onScroll(e)}} >
+                <div id={this.props.info.shellId + '_output'} className="outputs">
                     <div className="output">{this.info.output}</div>
                     {this.info.insertModeOn ? cwdAndInput : null}
+                    {this.autoScroll ? <div ref={(el) => { if(el) el.scrollIntoView({ behavior: "smooth" });}}></div> : <></>}
                 </div>
             </div>
         );

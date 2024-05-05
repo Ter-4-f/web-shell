@@ -1,8 +1,3 @@
-import { useState } from 'react';
-import Timer from "./models/Timer";
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
-import CountdownPage from './routes/CountdownPage';
-import RootPage from './routes/RootPage';
 import Server from './components/Server';
 import {default as Logo} from './icons/favicon.ico';
 import { ALL_SERVERS } from './config';

@@ -14,4 +14,18 @@ export const ALL_SERVERS = [
             {value: "df", label: "Disk Size"}
         ]
     }
+    // ,{
+    //     name: "YT-DLP",
+    //     location: {
+    //         host: "home.local",
+    //         port: 23
+    //     },
+    //     insertLines: [
+    //         {value: "yt-dlp ", label: "yt-dlp"}
+    //     ],
+    //     executeLines: [
+    //         {value: "curl ipconfig.io/json", label: "IP"},
+    //         {value: "systemctl status openvpn@default.service", label: "IP"}
+    //     ]
+    // }
 ]

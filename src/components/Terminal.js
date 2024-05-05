@@ -96,14 +96,18 @@ export default class Terminal extends React.Component {
     }
 
     onShellDelete (index) {
-        const removedShell = this.shells.splice(index, 1);
-        if (removedShell.id) {
-            setTimeout(() => {deleteShell(removedShell.id)}, 0);
+        const removedShell = this.shells.splice(index, 1)[0];
+        console.log("removed", removedShell);
+        if (removedShell.shellId) {
+            setTimeout(() => {deleteShell(removedShell.shellId)}, 0);
         }
-        
 
-        if (this.shells.length === 0) {
-            this.addShell();
+        if (this.shells.length > 0) {
+            let index = this.state.shellIndex;
+            if (this.shells.length < index) 
+                index -= 1;
+
+            this.props.setActiveShell(this.shells[index]);
         }
 
         this.forceUpdate();
@@ -118,9 +122,11 @@ export default class Terminal extends React.Component {
         createShell(this.props.location)
                 .then(shell => {
                     this.shells.push(shell);
+                    if (this.shells.length === 1) 
+                        this.props.setActiveShell(this.shells[0]);                    
                     this.forceUpdate();
                 })
-                .catch(err => alert("Unable to connecto to the server.", err));
+                .catch(err => alert("Unable to connect to the server.", err));
     }
 
     onCreateShell () {

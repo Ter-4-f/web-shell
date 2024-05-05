@@ -37,12 +37,12 @@ export default class Server extends React.Component {
 
     insertCommand (command) {
         if (this.activeShell) 
-            this.activeShell.props.info.insertCommand(command, false);
+            this.activeShell.insertCommand(command, false);
     };
 
     executeCommand (command) {
         if (this.activeShell) 
-            this.activeShell.executeCVooomand(command, false);
+            this.activeShell.insertCommand(command, true);
     };
 
     render () {
