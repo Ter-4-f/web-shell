@@ -1,0 +1,55 @@
+.ping-container {
+    margin-top: 20px;
+    align-self: stretch;
+    width: fit-content;
+    display: flex; 
+    justify-content: center; 
+    align-items: center;    
+}
+
+.status-btn {
+    display: flex;
+    --status-width: 100px;
+    --status-height: 100px;
+    width: var(--status-width);
+    height: var(--status-height);
+    padding: 0px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 2px solid black;
+}
+.status-btn.ok {
+    box-shadow: 0px 0px 40px 0px green;
+}
+.status-btn.ok:hover:not([disabled]) {
+    box-shadow: 0px 0px 40px 0px rgb(32, 203, 38);;
+}
+.status-btn.warn {
+    box-shadow: 0px 0px 40px 0px red;
+}
+.status-btn.warn:hover:not([disabled]) {
+    box-shadow: 0px 0px 40px 0px rgb(255, 96, 96);
+}
+.status-btn.unknown {
+    background-color: black;
+    font-size: 75px;
+}
+.status-btn.init {
+    --animation-duration: 1.5s;
+    --bg-size: 200px;
+    /* background: radial-gradient(circle, red 0%, green 90%);  */
+    overflow: hidden;
+    animation: radial-animation var(--animation-duration) step-end infinite;
+}
+@keyframes radial-animation {
+    0% {
+        background-color: black;
+    }
+    50% {
+        background-color: red;
+    }
+    100% {
+        background-color: black;
+    }
+}

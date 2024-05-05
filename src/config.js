@@ -1,3 +1,5 @@
+export const backendBasePath = "http://localhost:8080";
+
 export const ALL_SERVERS = [
     {
         name: "Raspberry",

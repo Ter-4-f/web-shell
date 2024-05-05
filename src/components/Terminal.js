@@ -165,12 +165,12 @@ export default class Terminal extends React.Component {
         
 
         return (
-            <div className='terminal'>
+            <>
                 { this.shells.length === 0 
                 ? connectButton
                 : shell
                 }
-            </div>
+            </>
             
         );
     }

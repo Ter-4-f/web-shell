@@ -1,16 +1,23 @@
-.server-entry {
+.server {
     padding-left: 44px; 
     padding-right: 64px;
     width: 100vw;
     display: flex; 
-    flex-direction: row;
+    flex-direction: column;
     align-items: start;
-    gap: 50px;
-    align-items: stretch;
 }
 
-.server-row {    
-    max-height: fit-content;
+.server-entry {
+    display: flex; 
+    flex-direction: row;
+    align-items: start;
+    justify-content: space-between;
+    gap: 50px;
+    width: 100%;
+}
+
+
+.server-row {
     width: 100%;
 }
 
@@ -29,4 +36,25 @@
     display: flex;
     flex-direction: row;
     gap: 20px;
+    margin-top: 20px;
+}
+
+.server-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    height: fit-content;
+    border: none;
+    background-color: rgba(128, 128, 128, 0.6);
+    border-radius: 10px;
+    color: white;
+    -webkit-text-fill-color: white;
+    width: 100%;
+    padding: 15px;
+    margin-bottom: 10px;
+}
+
+.server-header * {
+    margin: 0;
 }
