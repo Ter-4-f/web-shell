@@ -22,7 +22,7 @@ public class CliBC {
     private final Config config;
 
     public Mono<SshConnection> executeCommand(@Nullable String cli, ServerData location) {
-        var connection = sshDAO.createConnection(location.getHost(), location.getPort(), location.getUsername(), location.getPassword())
+        var connection = sshDAO.createConnection(location.getIp(), location.getPort(), location.getUsername(), location.getPassword())
                 .onErrorMap(e -> new ProblemException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to connect to server.", e))
                 .doOnNext(connectionDB::saveConnection);
 
@@ -43,7 +43,7 @@ public class CliBC {
     }
 
     public Mono<String> killPc (ServerData location) {
-        return sshDAO.executeCommand(location.getHost(), location.getPort(), location.getUsername(), location.getPassword(), config.getKillCommand())
+        return sshDAO.executeCommand(location.getIp(), location.getPort(), location.getUsername(), location.getPassword(), location.getKillCommand())
                 .onErrorMap(e -> new ProblemException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to shut down the PC", e));
     }
 }

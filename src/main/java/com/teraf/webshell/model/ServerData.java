@@ -13,8 +13,10 @@ public class ServerData {
 
     private String mac;
     private String host;
+    private String ip;
     private int port;
     private String username;
     private String password;
+    private String killCommand;
 
 }
