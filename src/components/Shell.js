@@ -1,11 +1,6 @@
 import React, { createRef, useState } from 'react';
-import { ReactComponent  as ResumeIcon } from '../icons/resume.svg';
-import { ReactComponent  as PauseIcon } from '../icons/pause.svg';
-import { ReactComponent  as ReloadIcon } from '../icons/reload.svg';
-import { ReactComponent  as CancelIcon } from '../icons/x.svg';
 import './Shell.css';
 import { connectionManager, createShell, readOutput, sendCommand, sendSignal } from '../services/ShellService';
-import determineShellname from '../utils/ShellUtils';
 import AnsiConverter from 'ansi-to-html';
 
 const ConnectionStatus = Object.freeze({
@@ -17,19 +12,146 @@ const ConnectionStatus = Object.freeze({
 const sshPromptPattern = /^.+@.+:\S+\s*\$$/;
 // const promptPattern = /^([^@]+)@([^:]+):(.+)\$\s?$/; // for user and address
 const promptPattern = /^([^@]+@[^:]+):(.+)\$(.*)$/;
+const ansiGraphicMode = /^\[\d+?(;\d+)*m$/;
+const encoder = new TextEncoder();
 
-function formattedPrompt (prompt) {
-    const match = prompt.match(promptPattern);
-    if (match) 
-        return <>
-            <span className='prompt-location'>{match[1]}</span>
-            <span className='prompt-text'>:</span>
-            <span className='prompt-path'>{match[2]}</span>
-            <span className='prompt-text'>$</span>
-            <span>{match[3]}</span>
-        </>
-    
-    return <></>;
+class OutputParser {
+    constructor (onAddLine, onUpdate) {
+        this.insertModeOn = false;
+        this.escapeModeOn = false;
+        this.escapeCommand = "";
+        this.cursorPosition = 0;
+        this.onAddLine = onAddLine;
+        this.onUpdate = onUpdate;
+        this.ansiConverter = new AnsiConverter();
+        this.uncommitedData = Array.apply(null, Array(5)).map(function () {});
+    }
+
+    parseInput () {
+        const data = this.loadUncommitedData();
+        const match = data.match(promptPattern);
+        if (match) {
+            console.log("line matched prompt", data, match[1], match[2], match[3])
+            this.cursorPosition = match[1].length + match[2].length + 2; // +2 --> : and $
+            const input = match[3];
+            for (let i = this.cursorPosition; i < this.uncommitedData.length; i++) {
+                this.uncommitedData[i] = undefined;                
+            }
+
+            return input
+        }
+        return "";
+    }
+
+    formattedPrompt (prompt) {
+        if (prompt.includes("\u001b[")) {
+            return this.parseUncommitedData(prompt);
+        }
+        const match = prompt.match(promptPattern);
+        if (match) 
+            return <>
+                <span className='prompt-location'>{match[1]}</span>
+                <span className='prompt-text'>:</span>
+                <span className='prompt-path'>{match[2]}</span>
+                <span className='prompt-text'>$</span>
+                <span>{match[3]}</span>
+            </>
+        
+        return <></>;
+    }
+
+    loadUncommitedData () {
+        let line = '';
+        for (let i = 0; i < this.uncommitedData.length; i++) {
+            if (this.uncommitedData[i] !== undefined) {
+                line += this.uncommitedData[i];
+            }
+        }
+        return line;
+    }
+
+    parseUncommitedData (uncommitedData) {
+        let htmlLine;
+        const formatted = this.ansiConverter.toHtml(uncommitedData);
+        if (uncommitedData === formatted) htmlLine = <div key={crypto.randomUUID()} className='stdout'>{uncommitedData}</div>;
+        else                    htmlLine = <div key={crypto.randomUUID()} className='stdout' dangerouslySetInnerHTML={{__html: formatted}} />;
+
+        return htmlLine;
+    }
+
+    addLine () {
+        this.cursorPosition = 0;
+        const data = this.loadUncommitedData();
+        const line = this.parseUncommitedData(data);
+        this.uncommitedData = this.uncommitedData.map(function () {});
+        this.onAddLine(line);
+    }
+
+    readChunk (chunk) {
+        console.log("Parsing chunk\n", JSON.stringify(chunk));
+        for (let i = 0; i < chunk.length; i++) {
+            const char = chunk.charAt(i);
+
+            if (this.escapeModeOn) {
+                this.escapeCommand += char;
+
+                if (this.escapeCommand === "[A") {
+                    this.escapeCommand = "";
+                    this.escapeModeOn = false;
+                } else if (this.escapeCommand === "[?2004h") {
+                    this.escapeCommand = "";
+                    this.escapeModeOn = false;
+                    this.insertModeOn = true
+                } else if (this.escapeCommand === "[?2004l") {
+                    this.escapeCommand = "";
+                    this.escapeModeOn = false;
+                    this.insertModeOn = false
+                } else if (this.escapeCommand === "[K") {
+                    this.escapeCommand = "";
+                    this.escapeModeOn = false;
+                    console.log("encountered [K at cursor posisiton", this.cursorPosition, this.uncommitedData);
+                    for (let i = this.cursorPosition; i < this.uncommitedData.length; i++) {
+                        this.uncommitedData[i] = undefined;                        
+                    }
+                } else if (this.escapeCommand.match(ansiGraphicMode)) {
+                    this.escapeCommand = "\u001b" + this.escapeCommand;
+                    for (let i = 0; i < this.escapeCommand.length; i++) {
+                        this.uncommitedData[this.cursorPosition] = this.escapeCommand.charAt(i);
+                        this.cursorPosition++;
+                    }
+                    
+                    this.escapeCommand = "";
+                    this.escapeModeOn = false;
+                } else if (this.escapeCommand.length > 7) {
+                    console.log("Long escape sequence: ", this.escapeCommand);
+                } else {
+                    // console.log("Escape char: ", char);
+                }
+
+                continue;
+            }
+
+            if (char === '\n') {
+                this.addLine();
+            } else if (char === '\r') { 
+                this.cursorPosition = 0;
+            } else if (char === '\u0000') { // null
+            } else if (char === '\u0008') { // backspace
+                const match = this.loadUncommitedData().match(promptPattern);
+                if (match) {
+                    continue;
+                }
+                this.cursorPosition -= 1;
+            } else if (char === '\u001b') { // escape char
+                this.escapeModeOn = true;
+            } else {
+                this.uncommitedData[this.cursorPosition] = char;
+                this.cursorPosition++;
+            }
+        }
+
+        this.onUpdate();
+    }
 }
 
 
@@ -42,8 +164,13 @@ export class ShellInfo {
         this.cwd = "";
         this.input = "";
         this.isInputVisible = false;
-        this.insertModeOn = false;
-        this.ansiConverter = new AnsiConverter();
+        this.parser = new OutputParser(
+            (line) => this.output.push(line),
+            () => { 
+                this.input = this.parser.parseInput();
+                if (this.onUpdate) this.onUpdate(); 
+            }
+        );
         this.connection = ConnectionStatus.OFFLINE;
         this.scrollToBottom = true;
     }
@@ -55,67 +182,6 @@ export class ShellInfo {
 
         this.onUpdate();
     }
-
-    addLine (line) {
-        if (line.includes("\u001b[?2004h")) {
-            this.insertModeOn = true;
-        }
-        if (line.includes("\u001b[?2004l")) {
-            this.insertModeOn = false;
-        }
-        if (line.includes("\u0008")) {
-            for (let i = 0; i < line.length; i++) {
-                if (this.input.length > 0 && line.charAt(i) === "\u0008") {
-                    this.input = this.input.substring(0, this.input.length - 1)
-                }
-            }
-        }
-
-        line = line.replace("\u001b[?2004h", "")
-                .replace("\u001b[?2004l", "")
-                .replaceAll("\u0000", "")
-                .replaceAll("\u0008", "")
-                .replaceAll("\u001b[K", "")
-                .trim();
-
-        if (this.insertModeOn) {
-            if (sshPromptPattern.test(line))  {
-                console.log("CWD", line);
-                this.cwd = line + " ";
-            }
-            else if (line != "") {
-                console.log("INPUT", line);
-                this.input = line;
-            }
-                
-            
-            if (this.onUpdate)
-                this.onUpdate();
-        } else {
-            if (this.cwd != "") {
-                this.output.push(<div key={crypto.randomUUID()} className='stdout'>{formattedPrompt(this.cwd + this.input)}</div>);
-                this.input = "";
-                this.cwd = "";
-            }
-
-            if (line.length === 0)  
-                return;
-
-            let htmlLine;
-            const formatted = this.ansiConverter.toHtml(line);
-            if (line === formatted) {
-                htmlLine = <div key={crypto.randomUUID()} className='stdout'>{line}</div>;
-            } else 
-                htmlLine = <div key={crypto.randomUUID()} className='stdout' dangerouslySetInnerHTML={{__html: formatted}} />;
-
-            this.output.push(htmlLine);
-
-            if (this.onUpdate) {
-                this.onUpdate();
-            };
-        }
-    }
-
 }
 
 
@@ -155,6 +221,7 @@ class Shell extends React.Component {
             this.handleEnter(e)
         }
         else if (e.key === 'ArrowUp') {
+            console.log("Up");
             sendSignal(this.info.shellId, "\\u001b[A")
                     .catch(err => {
                         alert("Unable to send signal", err)
@@ -203,16 +270,26 @@ class Shell extends React.Component {
     }
 
     render() {
-        const cwdAndInput = <div className='lastLine'>
-                                <div className='output-line prompt'>{formattedPrompt(this.info.cwd)}</div>
-                                <input type="text" className='shell-input'  onKeyDown={this.handleKeyDown} onInput={(e) => {this.info.input = e.target.value; this.forceUpdate();}} value={this.info.input}/>
-                            </div>;
+        const uncommitedData = this.info.parser.loadUncommitedData();
+        const isInputAvailable = uncommitedData.match(promptPattern) !== null;
+        // const isInputAvailable = uncommitedData.match(promptPattern) && !uncommitedData.match(completePromptPattern);
 
+        const cwdAndInput = isInputAvailable ? 
+                            <div className='lastLine'>
+                                <div className='output-line prompt'>{this.info.parser.formattedPrompt(uncommitedData)}</div>
+                                <input type="text" className='shell-input'  onKeyDown={this.handleKeyDown} onInput={(e) => {this.info.input = e.target.value; this.forceUpdate();}} value={this.info.input}/>
+                            </div> : <></>;
+
+        const uncommitedOutput = isInputAvailable ? <></> : this.info.parser.parseUncommitedData(uncommitedData);
+        
         return (
             <div id={this.props.info.shellId + '_shell'} className="shell" onClick={this.focusShell} onWheel={(e) => {this.onScroll(e)}} >
                 <div id={this.props.info.shellId + '_output'} className="outputs">
-                    <div className="output">{this.info.output}</div>
-                    {this.info.insertModeOn ? cwdAndInput : null}
+                    <div className="output">
+                        <div className='commitedLines'>{this.info.output}</div>
+                        {isInputAvailable ? <></> : uncommitedOutput}
+                    </div>
+                    {cwdAndInput}
                     {this.autoScroll ? <div ref={(el) => { if(el) el.scrollIntoView({ behavior: "smooth" });}}></div> : <></>}
                 </div>
             </div>

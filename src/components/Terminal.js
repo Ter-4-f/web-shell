@@ -5,7 +5,7 @@ import { ReactComponent  as ReloadIcon } from '../icons/reload.svg';
 import { ReactComponent  as CancelIcon } from '../icons/x.svg';
 import Shell, { ShellInfo } from './Shell';
 import './Terminal.css';
-import { createShell, deleteShell, loadShells } from '../services/ShellService';
+import { cancelCommand, createShell, deleteShell, loadShells } from '../services/ShellService';
 import { OverflowDetector } from 'react-overflow';
 import determineShellname from '../utils/ShellUtils';
 
@@ -82,7 +82,7 @@ export default class Terminal extends React.Component {
     }
 
     onCancel = () => {
-        
+        cancelCommand(this.shells[this.state.shellIndex].shellId);
     };
     
     onSelect = (index) => {

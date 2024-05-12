@@ -11,7 +11,7 @@ export const HostStatus = Object.freeze({
 export async function pingHost(location) {
     const requestOptions = {
         method: 'POST',
-        body: `{"host": "${location.host}"}`,
+        body: `{"host": "${location.ip}"}`,
         headers: {
             "Content-Type": "application/json"
         }        

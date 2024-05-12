@@ -3,14 +3,13 @@ import determineShellname from "../utils/ShellUtils";
 
 const backendBasePath = "http://localhost:8080";
 
-async function cancelCommand (path, shellId) {
+export async function cancelCommand (shellId) {
     const requestOptions = {
         method: 'POST'
     };
 
-    const shellPath = `/shells/${shellId}/active-command:cancel`;
-
-    return fetch(backendBasePath + path + shellPath, requestOptions)
+    const shellPath = `/shells/${shellId}:cancel`;
+    return fetch(backendBasePath + shellPath, requestOptions)
         .then(response => {
             if (!response.ok) {
                 console.error("Unable to cancel the shell", response);
@@ -83,7 +82,8 @@ export async function deleteShell(id) {
     const requestOptions = {method: 'DELETE'};
     const path = `/shells/${id}`;
 
-    console.log("dell");
+    connectionManager.remvoeShell(id);
+
     return fetch(backendBasePath + path, requestOptions)
         .then(async response => {
             if (!response.ok) {
@@ -116,88 +116,41 @@ export async function loadShells (location) {
 class ConnectionManager {
     constructor () {
         this.connections = {};
+        this.events = {};
     }
     
     addShell (shellInfo) {
         this.connections[shellInfo.shellId] = shellInfo;
-        readOutput(shellInfo.shellId, (line) => shellInfo.addLine(line));
+        const event = readOutput(shellInfo.shellId, (line) => shellInfo.parser.readChunk(line));
+        this.events[shellInfo.shellId] = event;
+    }
+
+    remvoeShell (shellId) {
+        this.connections[shellId] = undefined;
+        this.events[shellId].close();
+        this.events[shellId] = undefined;
     }
 
     getShell (shellId) {
         return this.connections[shellId];
     }
-
-
 }
 export const connectionManager = new ConnectionManager();
 
 
 
-export async function readOutput(id, onNext) {
-    const requestOptions = {
-        keepalive: true,
-        method: 'GET',
-        headers: {
-            "Content-Type": "application/json"
+export function readOutput(id, onNext) {
+    const path = `/shells/${id}/output`;
+    const eventSource = new EventSource(backendBasePath + path);
+
+    eventSource.onmessage = function(event) {
+        if (onNext) {            
+            const data = event.data.startsWith("\\r") ? event.data.replace("\\r", "\r") : event.data;
+            onNext(data);
         }
     };
-    const path = `/shells/${id}/output`;
 
-    console.log("read");
-    const response = await fetch(backendBasePath + path, requestOptions);
-    console.log("after await");
-    const reader = response.body.getReader();
-    
-    const decoder = new TextDecoder('utf8');
-    let first = true;
-    try {
-        console.log("read parts");
-        while (true) {
-            const { done, value } = await reader.read();
-            
-            if (done) {
-                if (value) {
-                    console.log("Chunking was marked as done but a chunk is still here:", value);
-                }
-                break;
-            }
-
-            // Process the current chunk data
-            const chunkText = decoder.decode(value);
-            console.log("Chunk: \n", chunkText);
-            const result = checkBody(chunkText, first);
-            console.log("Result: \n", result);
-            result.forEach(element => {
-                if (onNext)
-                    onNext(element);
-            });
-        }
-    } catch (err) {
-        console.log("Unable to read response: ");
-        console.log(err, JSON.stringify(err));
-    }
-}
-
-
-function checkBody (body) {
-    let bodyLines = body.split('\n');
-
-
-    for (let index = 0; index < bodyLines.length; index++) {
-        let line = bodyLines[index];
-        if (line.startsWith("data:")) {
-            line = line.replace("data:", "");
-            bodyLines[index] = line + "\n";
-        }
-
-        if (line.includes("\u001b[?2004l") && line.includes("\u001b[?2004h")) {
-            const splitIndex = line.indexOf("\u001b[?2004h");
-            bodyLines.splice(index, 1, line.substring(0, splitIndex), line.substring(splitIndex));
-        }
-        
-
-    }
-    return bodyLines;
+    return eventSource;
 }
 
 

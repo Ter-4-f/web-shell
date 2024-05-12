@@ -3,6 +3,7 @@
     color: white;
   }
 
+
   body {
     font-family: sans-serif;
     margin: 0;
@@ -102,7 +103,19 @@ button.ok:hover:not([disabled]) {
 
 
 
+.website {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
 
+.servers {
+    flex: 1;
+    justify-self: stretch;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
   
 
   .centering {
