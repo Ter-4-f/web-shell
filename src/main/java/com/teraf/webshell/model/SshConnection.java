@@ -24,7 +24,9 @@ public class SshConnection {
 
 
     public boolean isConnectedToServer (ServerData server) {
-        return session.getHost().equalsIgnoreCase(server.getHost()) && session.getPort() == server.getPort();
+        return (session.getHost().equalsIgnoreCase(server.getHost()) ||
+                session.getHost().equalsIgnoreCase(server.getIp()))
+            && session.getPort() == server.getPort();
     }
 
     public ConnectionDTO toDTO () {

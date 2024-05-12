@@ -60,12 +60,13 @@ public class CliAPI {
 
     @GetMapping(value = "/shells/{shell-id}/output", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> getShellOutput (@PathVariable(value="shell-id") String shellId) {
-        return shellBC.loadActiveOutput(UUID.fromString(shellId));
+        return shellBC.loadActiveOutput(UUID.fromString(shellId))
+                .doOnNext(s -> System.out.println("line: " + s));
     }
 
     @PostMapping(value = "/shells/{shell-id}:cancel")
     public Mono<ResponseEntity<Void>> cancelCommand (@PathVariable(value="shell-id") String shellId) {
-        return shellBC.cancelCommand(UUID.fromString(shellId))
+        return cliBC.cancelCommand(UUID.fromString(shellId))
                 .map(_ -> ResponseEntity.noContent().build());
     }
 

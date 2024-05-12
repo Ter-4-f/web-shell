@@ -6,6 +6,7 @@ import com.teraf.webshell.model.ProblemException;
 import com.teraf.webshell.model.SshConnection;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import reactor.core.Disposable;
@@ -15,12 +16,15 @@ import reactor.core.scheduler.Schedulers;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeoutException;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class SshDAO {
@@ -65,9 +69,25 @@ public class SshDAO {
                 // TODO filter out all commands, to have a clear history
                 .filter(line -> !"\u0007".equals(line)) // filter out bell sound
                 .doOnNext(System.out::println)
+                .map(line -> {
+                    if (line.startsWith("\r"))
+                        return line.replaceFirst("\r", "\\\\r");
+
+                    return line;
+                })
                 .cache();
 
         output.subscribeOn(Schedulers.boundedElastic()).subscribe();
+        output.timeout(Duration.ofSeconds(1))
+                .doOnError(TimeoutException.class, e -> {
+                    log.info("Initialisation-Timeout occurred, send check");
+                    this.executeSignal(channel, "\n");
+                })
+                .next()
+                .doOnNext(s -> log.warn(STR."Swallowed first message: \{s}"))
+                .onErrorResume(e -> Mono.empty())
+                .subscribeOn(Schedulers.boundedElastic())
+                .subscribe();
 
         return Mono.just(SshConnection.builder()
                 .id(UUID.randomUUID())
@@ -82,7 +102,6 @@ public class SshDAO {
 
 
     public Mono<Boolean> executeCommand(ChannelShell channel, String command) {
-        System.out.println("AS COMMAND");
         return executeSignal(channel, STR."\{command}\n");
     }
 

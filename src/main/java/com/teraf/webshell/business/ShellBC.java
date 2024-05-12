@@ -51,15 +51,4 @@ public class ShellBC {
     public Flux<String> loadActiveOutput (UUID id) {
         return loadConnection(id).getOutput();
     }
-
-    public Mono<Boolean> cancelCommand (UUID id) {
-        var connection = loadConnection(id);
-        try {
-            connection.getShell().sendSignal("INT");
-            return Mono.just(true);
-        } catch (Exception e) {
-            log.error("Unable to cancel command for the shell '{}' at {}:{}", connection.getId().toString(), connection.getSession().getHost(), connection.getSession().getPort(), e);
-            return Mono.error(new ProblemException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to cancel the command"));
-        }
-    }
 }
