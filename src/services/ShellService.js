@@ -1,7 +1,6 @@
 import { ShellInfo } from "../components/Shell";
+import { backendBasePath } from "../config";
 import determineShellname from "../utils/ShellUtils";
-
-const backendBasePath = "http://localhost:8080";
 
 export async function cancelCommand (shellId) {
     const requestOptions = {
@@ -75,7 +74,8 @@ export async function sendSignal(shellId, signal) {
                 const text = await response.text();
                 throw new Error(text);
             }
-        });
+        })
+        .catch(err => { console.error("Unable to send signal", signal, err)});
 }
 
 export async function deleteShell(id) {
@@ -144,9 +144,14 @@ export function readOutput(id, onNext) {
     const eventSource = new EventSource(backendBasePath + path);
 
     eventSource.onmessage = function(event) {
-        if (onNext) {            
-            const data = event.data.startsWith("\\r") ? event.data.replace("\\r", "\r") : event.data;
-            onNext(data);
+        if (onNext) {
+            // console.log("Escaped message ", event.data);
+            try {
+                const data = JSON.parse(`"${event.data.replaceAll("\\u0020", " ").replaceAll(/\\\\/g, '\\')}"`);
+                onNext(data);
+            } catch (e) {
+                console.error("Some error decoding message\n", event.data, e);
+            }
         }
     };
 

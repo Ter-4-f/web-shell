@@ -77,7 +77,6 @@ export default function Server ({ pcName, location, insertLines, executeLines })
                         :   <></>
                         }
                         
-                        
                         <ServerStatus status={pingStatus} onKillServer={onKillServer}/>
                     </div>;
 

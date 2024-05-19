@@ -1,6 +1,7 @@
 import Server from './components/Server';
 import {default as Logo} from './icons/favicon.ico';
 import { ALL_SERVERS, ALL_SHORTCUTS } from './config';
+import { v4 as uuidv4 } from 'uuid';
 
 
 let vh = window.innerHeight * 0.01;
@@ -25,7 +26,7 @@ function iOS() {
 function Header () {
     const isIos = iOS();
     const shortCurts = ALL_SHORTCUTS.map(shortcut => {
-        return <a className="active" href={`http://${isIos ? shortcut.ip : shortcut.host}`} target="_blank">{shortcut.label}</a>
+        return <a key={uuidv4()} className="active" href={`http://${isIos ? shortcut.ip : shortcut.host}`} target="_blank">{shortcut.label}</a>
     })
 
     ALL_SHORTCUTS

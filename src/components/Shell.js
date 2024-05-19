@@ -2,12 +2,32 @@ import React, { createRef, useState } from 'react';
 import './Shell.css';
 import { connectionManager, createShell, readOutput, sendCommand, sendSignal } from '../services/ShellService';
 import AnsiConverter from 'ansi-to-html';
+import { v4 as uuidv4 } from 'uuid';
 
 const ConnectionStatus = Object.freeze({
     OFFLINE:   Symbol("offline"),
     CONNECTING:  Symbol("connecting"),
     CONNECTED: Symbol("connected")
 });
+
+function toUnicodeEscape(char) {
+    const num = char.charCodeAt(0);
+    // Ensure the number is within the valid range for Unicode (0 to 65535)
+    if (num < 0 || num > 65535) {
+      throw new RangeError('Number must be between 0 and 65535');
+    }
+  
+    // Convert the number to a hexadecimal string
+    let hexString = num.toString(16);
+  
+    // Pad the string with leading zeros if necessary to ensure it's 4 digits
+    while (hexString.length < 4) {
+      hexString = '0' + hexString;
+    }
+  
+    // Return the formatted Unicode escape sequence
+    return '\\u' + hexString;
+  }
 
 const sshPromptPattern = /^.+@.+:\S+\s*\$$/;
 // const promptPattern = /^([^@]+)@([^:]+):(.+)\$\s?$/; // for user and address
@@ -25,22 +45,6 @@ class OutputParser {
         this.onUpdate = onUpdate;
         this.ansiConverter = new AnsiConverter();
         this.uncommitedData = Array.apply(null, Array(5)).map(function () {});
-    }
-
-    parseInput () {
-        const data = this.loadUncommitedData();
-        const match = data.match(promptPattern);
-        if (match) {
-            console.log("line matched prompt", data, match[1], match[2], match[3])
-            this.cursorPosition = match[1].length + match[2].length + 2; // +2 --> : and $
-            const input = match[3];
-            for (let i = this.cursorPosition; i < this.uncommitedData.length; i++) {
-                this.uncommitedData[i] = undefined;                
-            }
-
-            return input
-        }
-        return "";
     }
 
     formattedPrompt (prompt) {
@@ -73,10 +77,15 @@ class OutputParser {
     parseUncommitedData (uncommitedData) {
         let htmlLine;
         const formatted = this.ansiConverter.toHtml(uncommitedData);
-        if (uncommitedData === formatted) htmlLine = <div key={crypto.randomUUID()} className='stdout'>{uncommitedData}</div>;
-        else                    htmlLine = <div key={crypto.randomUUID()} className='stdout' dangerouslySetInnerHTML={{__html: formatted}} />;
+        if (uncommitedData === formatted) htmlLine = <div key={uuidv4()} className='stdout'>{uncommitedData}</div>;
+        else                    htmlLine = <div key={uuidv4()} className='stdout' dangerouslySetInnerHTML={{__html: formatted}} />;
 
         return htmlLine;
+    }
+
+    removeUncomittedLines () {
+        this.cursorPosition = 0;
+        this.uncommitedData = this.uncommitedData.map(function () {});
     }
 
     addLine () {
@@ -137,10 +146,6 @@ class OutputParser {
                 this.cursorPosition = 0;
             } else if (char === '\u0000') { // null
             } else if (char === '\u0008') { // backspace
-                const match = this.loadUncommitedData().match(promptPattern);
-                if (match) {
-                    continue;
-                }
                 this.cursorPosition -= 1;
             } else if (char === '\u001b') { // escape char
                 this.escapeModeOn = true;
@@ -166,21 +171,14 @@ export class ShellInfo {
         this.isInputVisible = false;
         this.parser = new OutputParser(
             (line) => this.output.push(line),
-            () => { 
-                this.input = this.parser.parseInput();
-                if (this.onUpdate) this.onUpdate(); 
-            }
+            () => { if (this.onUpdate) this.onUpdate(); }
         );
         this.connection = ConnectionStatus.OFFLINE;
         this.scrollToBottom = true;
     }
 
     insertCommand (value, execute) {
-        this.input = value;
-        if (execute)
-            this.handleEnter();
-
-        this.onUpdate();
+        this.handleEnter(value, execute);
     }
 }
 
@@ -188,10 +186,11 @@ export class ShellInfo {
 class Shell extends React.Component {
     constructor(props) {
         super(props);
-        this.info = connectionManager.getShell(props.info.shellId);
+        this.info = connectionManager.getShell(this.props.info.shellId);
         this.autoScroll = true;
         this.info.onUpdate = () => this.forceUpdate();
-        this.info.handleEnter = () => this.handleEnter();
+        this.info.handleEnter = (value, withEnter) => this.handleEnter(value, withEnter);
+        this.inputKey = uuidv4();
     }
 
     renderOutputs () {
@@ -208,56 +207,43 @@ class Shell extends React.Component {
         this.setState({isInputVisible: value})
     }
 
-    focusShell (shell) {
-        const collection = shell.target.getElementsByClassName('shell-input');
-
-        if (collection.length === 1) {
-            collection[0].focus();
-        }
-    }
-
     handleKeyDown = (e) => {
-        if (e.key === 'Enter') {
-            this.handleEnter(e)
-        }
-        else if (e.key === 'ArrowUp') {
-            console.log("Up");
-            sendSignal(this.info.shellId, "\\u001b[A")
-                    .catch(err => {
-                        alert("Unable to send signal", err)
-                    });
-        }
-        else if (e.key === 'ArrowDown') {
-            sendSignal(this.info.shellId, "\\u001b[B")
-                    .catch(err => {
-                        alert("Unable to send signal", err)
-                    });
-        }
+        if (e.key === 'Enter') { this.handleEnter(undefined, true) }
+        
+        else if (e.key === 'ArrowUp')    { sendSignal(this.info.shellId, "\\u001b[A"); }
+        else if (e.key === 'ArrowDown')  { sendSignal(this.info.shellId, "\\u001b[B"); }
+        else if (e.key === 'ArrowRight') { sendSignal(this.info.shellId, "\\u001b[C"); }
+        else if (e.key === 'ArrowLeft')  { sendSignal(this.info.shellId, "\\u001b[D"); }
+        
+        else if (e.key === 'Backspace') { sendSignal(this.info.shellId, "\\u0008"); }
+        else if (e.key === 'Delete')    { sendSignal(this.info.shellId, "\\u007f"); }
+        else if (e.key === 'Tab')       { sendSignal(this.info.shellId, "\\u0009"); }
+        else if (e.key === 'Shift') { }
+        
+        else if (e.key.length > 1) { return; }
+
+        else { sendSignal(this.info.shellId, toUnicodeEscape(e.key)); }
+        
+        console.log("Key", e.key, e.keyCode, toUnicodeEscape(e.key));
+        e.stopPropagation();
+        e.preventDefault();
     }
 
-    handleEnter () {
-        const command = this.info.input
-        this.info.input = "";
+    handleEnter (value, withEnter) {
+        const text = `${value ? value : ''}${withEnter ? "\\u000A" : ''}`;
+        sendSignal(this.info.shellId, text);
 
-        sendCommand(this.info.shellId, command)
-            .catch(err => {
-                alert("Unable to execute command", err)
-            });
+        // const input = document.getElementById(this.inputKey);
+        // const command = value? value : input.value;
+        // input.value = "";
+        // this.info.parser.removeUncomittedLines();
+        // // TODO send input signals to SSH and dont save in inpuit element
+
+        // sendCommand(this.info.shellId, command)
+        //     .catch(err => {
+        //         alert("Unable to execute command", err)
+        //     });
     }
-
-    // componentDidUpdate () {
-    //     console.log("===== Update");
-    //     const outElement = this.info.scrollMark;
-    //     if (this.info.scrollToBottom) {
-    //         if (outElement) {
-    //             console.log("=========================================================");
-    //             outElement.scrollIntoView = outElement.scrollBackup;
-    //             outElement.scrollIntoView({ behavior: "smooth" });
-    //         }
-    //     } else {
-            
-    //     }
-    // }
     
     onScroll (e) {
         if (e.deltaY < 0) {
@@ -269,27 +255,66 @@ class Shell extends React.Component {
         }
     }
 
+    updateCursor () {
+        // const cursorheight = this.output ? this.output.scrollHeight : "0";
+        if (!this.uncommited) {
+            return;
+        }
+        const lastText = this.uncommited.lastChild.lastChild || this.uncommited.lastChild;
+        let range = document.createRange();
+        range.setStart(lastText, lastText.length - 1);
+        range.setEnd(lastText, lastText.length);
+        
+        // Get the bounding rectangle of the range
+        let rect = range.getBoundingClientRect();        
+        const a = {
+            x: rect.left,
+            y: rect.top,
+            width: rect.width,
+            height: rect.height
+        };
+        
+        // this.myInp.style.left = rect.left + "px";
+        const left = `calc(${this.output.getBoundingClientRect().left}px + ${this.info.parser.cursorPosition}ch)`
+        this.myInp.style.left = left;
+        this.myInp.style.top = rect.top + "px";
+        this.init = false;
+    }
+    
+    focusInput () {
+        var selection = window.getSelection();
+        if(selection.type != "Range") {
+            this.myInp.focus();
+        }
+    }
+    
+    componentDidUpdate () {
+        if (this.inited) {
+            this.updateCursor();
+        }
+    }
+
+    componentDidMount () {
+        setTimeout(() => { 
+            this.updateCursor();
+            this.inited = true;
+        }, 800);
+    }
+
+    
+
     render() {
         const uncommitedData = this.info.parser.loadUncommitedData();
-        const isInputAvailable = uncommitedData.match(promptPattern) !== null;
-        // const isInputAvailable = uncommitedData.match(promptPattern) && !uncommitedData.match(completePromptPattern);
-
-        const cwdAndInput = isInputAvailable ? 
-                            <div className='lastLine'>
-                                <div className='output-line prompt'>{this.info.parser.formattedPrompt(uncommitedData)}</div>
-                                <input type="text" className='shell-input'  onKeyDown={this.handleKeyDown} onInput={(e) => {this.info.input = e.target.value; this.forceUpdate();}} value={this.info.input}/>
-                            </div> : <></>;
-
-        const uncommitedOutput = isInputAvailable ? <></> : this.info.parser.parseUncommitedData(uncommitedData);
+        const uncommitedOutput = <div ref={(uncom) => this.uncommited = uncom} >{this.info.parser.parseUncommitedData(uncommitedData)}</div>;
         
         return (
-            <div id={this.props.info.shellId + '_shell'} className="shell" onClick={this.focusShell} onWheel={(e) => {this.onScroll(e)}} >
+            <div id={this.props.info.shellId + '_shell'} className="shell" onClick={e => this.focusInput()} onWheel={(e) => {this.onScroll(e)}} >
                 <div id={this.props.info.shellId + '_output'} className="outputs">
-                    <div className="output">
+                    <div className="output" ref={(out) => this.output = out}> 
                         <div className='commitedLines'>{this.info.output}</div>
-                        {isInputAvailable ? <></> : uncommitedOutput}
+                        {uncommitedOutput}
+                        <input id={this.inputKey} ref={(ip) => this.myInp = ip} className='prompt' onKeyDown={this.handleKeyDown} />
                     </div>
-                    {cwdAndInput}
                     {this.autoScroll ? <div ref={(el) => { if(el) el.scrollIntoView({ behavior: "smooth" });}}></div> : <></>}
                 </div>
             </div>

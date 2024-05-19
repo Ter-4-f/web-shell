@@ -8,6 +8,7 @@ import './Terminal.css';
 import { cancelCommand, createShell, deleteShell, loadShells } from '../services/ShellService';
 import { OverflowDetector } from 'react-overflow';
 import determineShellname from '../utils/ShellUtils';
+import { v4 as uuidv4 } from 'uuid';
 
 
 function TerminalHeader ({ shells, onSelect, onCreateShell, onDeleteShell }) {
@@ -104,9 +105,11 @@ export default class Terminal extends React.Component {
 
         if (this.shells.length > 0) {
             let index = this.state.shellIndex;
-            if (this.shells.length < index) 
+            if (index <= this.shells.length) {
                 index -= 1;
+            }
 
+            this.setState({shellIndex: index});
             this.props.setActiveShell(this.shells[index]);
         }
 
@@ -154,7 +157,7 @@ export default class Terminal extends React.Component {
         const headers = this.shells.map((shell) => shell.name);
         const shell =   <div className="terminal-container">
                             <TerminalHeader key={this.headerKey} shells={headers} onSelect={this.onSelect} onDeleteShell={(shell) => this.onShellDelete(shell)} onCreateShell={() => this.createShell()}/>
-                            <Shell key={crypto.randomUUID()} info={this.shells[this.state.shellIndex]} location={location} autoConnect={true} onConnect={this.onConnect}/>
+                            <Shell key={uuidv4()} info={this.shells[this.state.shellIndex]} location={location} autoConnect={true} onConnect={this.onConnect}/>
                             <button className="cancel-btn warn" onClick={() => this.onCancel()}>cancel</button>            
                         </div>;
 

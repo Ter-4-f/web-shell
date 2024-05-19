@@ -1,4 +1,5 @@
-export const backendBasePath = "http://localhost:8080";
+// export const backendBasePath = "http://localhost:8080";
+export const backendBasePath = "http://192.168.3.22:8080";
 
 export const ALL_SERVERS = [
     {
@@ -12,7 +13,6 @@ export const ALL_SERVERS = [
             {value: "echo test", label: "Test"}
         ],
         executeLines: [
-            {value: "/mnt/private/download_repeat.sh", label: "Execute Repeat"}, 
             {value: "systemctl status openvpn@default.service", label: "vpn status"}, 
             {value: "df", label: "Disk Size"}
         ]
@@ -25,10 +25,12 @@ export const ALL_SERVERS = [
             port: 23
         },
         insertLines: [
-            {value: "yt-dlp ", label: "yt-dlp"}
+            {value: "yt-dlp ", label: "yt-dlp"},
+            {value: "/mnt/private/scripts/addToDownloads.sh ", label: "add video"}
         ],
         executeLines: [
             {value: "curl ipconfig.io/json", label: "IP"},
+            {value: '/mnt/private/scripts/download_repeat.sh', label: "Download"},
             {value: 'yt-dlp \\"https://www.youtube.com/watch?v=I6rufOlNyYM\\"', label: "YT Test"},
         ]
     }
@@ -41,7 +43,8 @@ export const ALL_SERVERS = [
         },
         insertLines: [],
         executeLines: [
-            {value: "echo activate browser", label: "activate browser"}
+            {value: "sh /volume6/Private/scripts/startBrowser.sh", label: "activate browser"},
+            {value: "/volume6/Private/scripts/sleepReady.sh", label: "clear active"}
         ]
     }
 ]
