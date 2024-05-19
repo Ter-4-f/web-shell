@@ -40,8 +40,10 @@ public class CliBC {
 
         if (asSignal)
             return sshDAO.executeSignal(connection.getShell(), command);
-        else
-            return sshDAO.executeCommand(connection.getShell(), command);
+        else {
+            String execCommand = "\r\u001b[K" + command;
+            return sshDAO.executeCommand(connection.getShell(), execCommand);
+        }
     }
 
     public Mono<String> killPc (ServerData location) {

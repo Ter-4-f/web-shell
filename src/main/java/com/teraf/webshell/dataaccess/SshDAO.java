@@ -7,6 +7,7 @@ import com.teraf.webshell.model.SshConnection;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import reactor.core.Disposable;
@@ -68,12 +69,12 @@ public class SshDAO {
 //                .filter(line -> !line.isBlank())
                 // TODO filter out all commands, to have a clear history
                 .filter(line -> !"\u0007".equals(line)) // filter out bell sound
-                .doOnNext(System.out::println)
+                .doOnNext(s -> System.out.println(STR."Line: '\{StringEscapeUtils.escapeJava(s)}'"))
+                .map(StringEscapeUtils::escapeJava)
                 .map(line -> {
-                    if (line.startsWith("\r"))
-                        return line.replaceFirst("\r", "\\\\r");
-
-                    return line;
+//                    if (line.startsWith("\r"))
+//                        return line.replaceFirst("\r", "\\\\r");
+                    return line.replaceAll(" ", "\\\\u0020");
                 })
                 .cache();
 

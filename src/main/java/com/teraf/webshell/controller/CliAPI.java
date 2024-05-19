@@ -7,6 +7,7 @@ import java.util.UUID;
 import com.teraf.webshell.config.Config;
 import com.teraf.webshell.model.*;
 import com.teraf.webshell.utils.LocationUtil;
+import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -61,7 +62,8 @@ public class CliAPI {
     @GetMapping(value = "/shells/{shell-id}/output", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> getShellOutput (@PathVariable(value="shell-id") String shellId) {
         return shellBC.loadActiveOutput(UUID.fromString(shellId))
-                .doOnNext(s -> System.out.println("line: " + s));
+//                .doOnNext(s -> System.out.println(STR."Data: '\{StringEscapeUtils.escapeJava(s)}'"))
+                ;
     }
 
     @PostMapping(value = "/shells/{shell-id}:cancel")
