@@ -207,7 +207,7 @@ class Shell extends React.Component {
         this.setState({isInputVisible: value})
     }
 
-    handleKeyDown = (e) => {
+    handleKeyDown = async (e) => {
         if (e.key === 'Enter') { this.handleEnter(undefined, true) }
         
         else if (e.key === 'ArrowUp')    { sendSignal(this.info.shellId, "\\u001b[A"); }
@@ -220,11 +220,14 @@ class Shell extends React.Component {
         else if (e.key === 'Tab')       { sendSignal(this.info.shellId, "\\u0009"); }
         else if (e.key === 'Shift') { }
         
+        else if (e.key === 'v' && e.ctrlKey) { const text = await navigator.clipboard.readText(); sendSignal(this.info.shellId, text); }
+        else if (e.key === 'c' && e.ctrlKey) { sendSignal(this.info.shellId, "\\u0003"); }
+        
         else if (e.key.length > 1) { return; }
 
         else { sendSignal(this.info.shellId, toUnicodeEscape(e.key)); }
         
-        console.log("Key", e.key, e.keyCode, toUnicodeEscape(e.key));
+        // console.log("Key", e.key, e.keyCode, toUnicodeEscape(e.key));
         e.stopPropagation();
         e.preventDefault();
     }
@@ -257,28 +260,15 @@ class Shell extends React.Component {
 
     updateCursor () {
         // const cursorheight = this.output ? this.output.scrollHeight : "0";
-        if (!this.uncommited) {
-            return;
-        }
-        const lastText = this.uncommited.lastChild.lastChild || this.uncommited.lastChild;
-        let range = document.createRange();
-        range.setStart(lastText, lastText.length - 1);
-        range.setEnd(lastText, lastText.length);
-        
-        // Get the bounding rectangle of the range
-        let rect = range.getBoundingClientRect();        
-        const a = {
-            x: rect.left,
-            y: rect.top,
-            width: rect.width,
-            height: rect.height
-        };
+        // if (!this.uncommited) {
+        //     return;
+        // }
         
         // this.myInp.style.left = rect.left + "px";
-        const left = `calc(${this.output.getBoundingClientRect().left}px + ${this.info.parser.cursorPosition}ch)`
-        this.myInp.style.left = left;
-        this.myInp.style.top = rect.top + "px";
-        this.init = false;
+        // const left = `calc(${this.output.getBoundingClientRect().left}px + ${this.info.parser.cursorPosition}ch)`
+        // this.myInp.style.top = rect.top + "px";
+        this.myInp.style.left = this.info.parser.cursorPosition + "ch";
+        this.myInp.style.bottom = 0 + "px";
     }
     
     focusInput () {
@@ -300,8 +290,7 @@ class Shell extends React.Component {
             this.inited = true;
         }, 800);
     }
-
-    
+   
 
     render() {
         const uncommitedData = this.info.parser.loadUncommitedData();

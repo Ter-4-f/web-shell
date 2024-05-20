@@ -10,7 +10,7 @@ export const ALL_SERVERS = [
             port: 22
         },
         insertLines: [
-            {value: "echo test", label: "Test"}
+            {value: "du -sh ", label: "size"}
         ],
         executeLines: [
             {value: "systemctl status openvpn@default.service", label: "vpn status"}, 
