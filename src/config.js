@@ -26,11 +26,11 @@ export const ALL_SERVERS = [
         },
         insertLines: [
             {value: "yt-dlp ", label: "yt-dlp"},
-            {value: "/mnt/private/scripts/addToDownloads.sh ", label: "add video"}
+            {value: "~/addToDownloads.sh ", label: "add video"}
         ],
         executeLines: [
             {value: "curl ipconfig.io/json", label: "IP"},
-            {value: '/mnt/private/scripts/download_repeat.sh', label: "Download"},
+            {value: '~/download_repeat.sh', label: "Download"},
             {value: 'yt-dlp \\"https://www.youtube.com/watch?v=I6rufOlNyYM\\"', label: "YT Test"},
         ]
     }

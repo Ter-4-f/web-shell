@@ -67,8 +67,8 @@
 
   
 button {
-    height: 100px;
-    width: 150px;
+    height: 80px;
+    width: 100px;
     border-radius: 5%;
     border: 1px solid white;
     box-shadow: 2px 2px 3px 3px #000000;
@@ -117,6 +117,13 @@ button.ok:hover:not([disabled]) {
     overflow-x: hidden;
 }
   
+.inline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: row;
+}
+
 
   .centering {
     display: flex;

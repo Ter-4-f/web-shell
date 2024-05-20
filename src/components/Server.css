@@ -6,6 +6,7 @@
     flex-direction: column;
     align-items: start;
     margin-top: 20px;
+    min-width: 900px;
 }
 
 .server-entry {
@@ -16,6 +17,7 @@
     gap: 50px;
     width: 100%;
     margin-bottom: 20px;
+
 }
 
 
@@ -53,7 +55,7 @@
     color: white;
     -webkit-text-fill-color: white;
     width: 100%;
-    padding: 15px;
+    padding: 5px 15px;
     margin-bottom: 10px;
 }
 

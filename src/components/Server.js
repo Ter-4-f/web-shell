@@ -1,26 +1,9 @@
 import React, { useState } from 'react';
-import Shell from './Shell';
 import Terminal from './Terminal';
 import { HostStatus, pingHost } from '../services/PingService';
 import './Server.css';
 import { ReactComponent  as UpArrow } from './../icons/up_arrow.svg';
-import './ServerStatus.css';
-
-
-function ServerStatus ({ onWakeServer, onKillServer, status }) {
-    return (
-        <div className="w3-container ping-container">
-            { status === HostStatus.INIT
-            ? <div title="wake Up Server" className="status-btn init"></div>
-            : status === HostStatus.UNKNOWN
-                ? <div title="wake Up Server" className="status-btn unknown">?</div>
-                : status === HostStatus.AWAKE
-                    ? <button title="Shutdown NAS"   className="status-btn ok"   onClick={onKillServer}></button>
-                    : <button title="wake Up Server" className="status-btn warn" onClick={onWakeServer}></button>
-            }            
-        </div>
-    );
-}
+import ServerStatus from './ServerStatus';
 
 
 export default function Server ({ pcName, location, insertLines, executeLines }) {
@@ -76,18 +59,19 @@ export default function Server ({ pcName, location, insertLines, executeLines })
                         ?   <Terminal location={location} setActiveShell={(shell) => setActiveShell(shell)}/>
                         :   <></>
                         }
-                        
-                        <ServerStatus status={pingStatus} onKillServer={onKillServer}/>
                     </div>;
 
     return (
         <div className="server">
             <button className='server-header' onClick={toggleVisibility}>
                 <h1>{pcName}</h1>
-                { showServer 
-                    ? <UpArrow className="server-arrow" />
-                    : <UpArrow className="server-arrow not-visible" />
-                }
+                <div className='inline'>
+                    <ServerStatus status={pingStatus} onKillServer={onKillServer}/>
+                    { showServer 
+                        ? <UpArrow className="server-arrow" />
+                        : <UpArrow className="server-arrow not-visible" />
+                    }
+                </div>
                 
             </button>
             { showServer 

@@ -146,16 +146,29 @@ export function readOutput(id, onNext) {
     eventSource.onmessage = function(event) {
         if (onNext) {
             // console.log("Escaped message ", event.data);
-            try {
-                const data = JSON.parse(`"${event.data.replaceAll("\\u0020", " ").replaceAll(/\\\\/g, '\\')}"`);
-                onNext(data);
-            } catch (e) {
-                console.error("Some error decoding message\n", event.data, e);
-            }
+            const data = parseData(event.data.replaceAll(/\\\\/g, '\\'));
+            onNext(data);
         }
     };
 
     return eventSource;
+}
+
+function parseData (data) {
+    try {
+        return JSON.parse(`"${data}"`);
+    } catch (e) {
+        if (e.columnNumber)  {
+            const okData = data.slice(0, e.columnNumber);
+            // console.log("OK: ", okData, "\nremoved: ", data.charAt(e.columnNumber));
+            return okData + "�" + parseData(data.slice(e.columnNumber + 1));
+        }
+        else {
+            console.error("Unable to parse data", e, data);
+            return "ERROR: unable to decode the message fromn the server\n";
+        }
+    }
+
 }
 
 

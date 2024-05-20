@@ -1,9 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { ReactComponent  as ResumeIcon } from '../icons/resume.svg';
-import { ReactComponent  as PauseIcon } from '../icons/pause.svg';
-import { ReactComponent  as ReloadIcon } from '../icons/reload.svg';
-import { ReactComponent  as CancelIcon } from '../icons/x.svg';
-import Shell, { ShellInfo } from './Shell';
+import React, { useState } from 'react';
+import Shell from './Shell';
 import './Terminal.css';
 import { cancelCommand, createShell, deleteShell, loadShells } from '../services/ShellService';
 import { OverflowDetector } from 'react-overflow';
@@ -98,14 +94,13 @@ export default class Terminal extends React.Component {
 
     onShellDelete (index) {
         const removedShell = this.shells.splice(index, 1)[0];
-        console.log("removed", removedShell);
         if (removedShell.shellId) {
             setTimeout(() => {deleteShell(removedShell.shellId)}, 0);
         }
 
         if (this.shells.length > 0) {
             let index = this.state.shellIndex;
-            if (index <= this.shells.length) {
+            if (index >= this.shells.length) {
                 index -= 1;
             }
 
