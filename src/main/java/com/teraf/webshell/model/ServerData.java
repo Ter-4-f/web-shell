@@ -18,5 +18,6 @@ public class ServerData {
     private String username;
     private String password;
     private String killCommand;
+    private boolean isVirtual;
 
 }
