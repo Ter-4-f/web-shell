@@ -1,0 +1,4 @@
+FROM openjdk:12
+ADD target/<jar-name-in-target>.jar docker-spring.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "docker-spring.jar"]

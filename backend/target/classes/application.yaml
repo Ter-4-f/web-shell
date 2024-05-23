@@ -1,0 +1,16 @@
+spring:
+  application.name: web-shell
+  security:
+    user.name: user
+    user.password: bdfiuvbs97b8v(&VC(&%Vvs97vcs9vsd9r7v9&V(&^Vcvbdd)))siugguhd!@#$%^&*(sfsdf)
+  mvc:
+    async:
+      request-timeout: -1
+
+server.port: 8080
+
+config:
+  startDir: 'D:\Projects'
+#  kill_command: "echo 'HCdqjDM7T$9jnVXqVM4uB!sDqsnpwJ' | sudo -S shutdown +1"
+  kill_command: "cmd /C echo mock shutdown"
+  wait-for-first-output-line: 100ms
