@@ -1,4 +1,4 @@
-FROM openjdk:12
-ADD target/<jar-name-in-target>.jar docker-spring.jar
+FROM openjdk:21
+ADD target/web-shell-0.0.1-SNAPSHOT.jar docker-spring.jar
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "docker-spring.jar"]
