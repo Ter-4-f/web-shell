@@ -11,9 +11,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.time.Duration;
 
 @Profile("remote-hosts")
 @RestController
@@ -32,6 +34,7 @@ public class HostAPI {
                         .getByName(request.getHost())
                         .isReachable(5000)
                 )
+                .retryWhen(Retry.backoff(6, Duration.ofMillis(100)))
                 .onErrorResume(UnknownHostException.class, _ -> Mono.just(false))
                 .map(PingResponseDTO::new)
                 .map(ResponseEntity::ok)
