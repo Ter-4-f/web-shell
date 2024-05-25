@@ -1,4 +1,4 @@
-import { backendBasePath } from "../config";
+import { backendBasePath } from "../local-config";
 
 export const HostStatus = Object.freeze({
     INIT: "HostStatus.INIT",

@@ -1,5 +1,5 @@
 import { ShellInfo } from "../components/Shell";
-import { backendBasePath } from "../config";
+import { backendBasePath } from "../local-config";
 import determineShellname from "../utils/ShellUtils";
 
 export async function cancelCommand (shellId) {
