@@ -43,7 +43,7 @@ public class ErrorHandler {
     @ExceptionHandler(NoResourceFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ProblemDTO serverExceptionHandler(NoResourceFoundException ex) {
-        return new ProblemDTO(404, "Path does not exit", "NOT_FOUND");
+        return new ProblemDTO(404, STR."Path does not exist: '\{ex.getHttpMethod()} \{ex.getResourcePath()}'", "NOT_FOUND");
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
