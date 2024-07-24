@@ -1,4 +1,4 @@
-import { backendBasePath } from "../local-config";
+import { backendPath } from "../config";
 
 export const HostStatus = Object.freeze({
     INIT: "HostStatus.INIT",
@@ -18,7 +18,7 @@ export async function pingHost(location) {
     };
     const path = `/ping`;
 
-    return fetch(backendBasePath + path, requestOptions)
+    return fetch(backendPath + path, requestOptions)
         .then(async response => {
             if (response.ok) {
                 const result =  await response.json();
@@ -34,7 +34,7 @@ export async function shutdownHost(location) {
         method: 'delete'      
     };
 
-    return fetch(backendBasePath + `/hosts?host=${location.host}&port=${location.port}`, requestOptions)
+    return fetch(backendPath + `/hosts?host=${location.host}&port=${location.port}`, requestOptions)
         .then(async response => {
             if (response.ok) {
                 const result =  await response.json();

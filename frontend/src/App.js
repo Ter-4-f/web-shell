@@ -1,6 +1,6 @@
 import Server from './components/Server';
 import {default as Logo} from './icons/favicon.ico';
-import { ALL_SERVERS, ALL_SHORTCUTS } from './config';
+import { ALL_SERVERS, ALL_SHORTCUTS } from './local-config';
 import { v4 as uuidv4 } from 'uuid';
 
 

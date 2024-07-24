@@ -1,5 +1,5 @@
 import { ShellInfo } from "../components/Shell";
-import { backendBasePath } from "../local-config";
+import { backendPath } from "../config";
 import determineShellname from "../utils/ShellUtils";
 
 export async function cancelCommand (shellId) {
@@ -8,7 +8,7 @@ export async function cancelCommand (shellId) {
     };
 
     const shellPath = `/shells/${shellId}:cancel`;
-    return fetch(backendBasePath + shellPath, requestOptions)
+    return fetch(backendPath + shellPath, requestOptions)
         .then(response => {
             if (!response.ok) {
                 console.error("Unable to cancel the shell", response);
@@ -22,7 +22,7 @@ export async function createShell(location) {
     };
     const path = `/shells?host=${location.host}&port=${location.port}`;
 
-    return fetch(backendBasePath + path, requestOptions)
+    return fetch(backendPath + path, requestOptions)
         .then(async response => {
             if (response.ok) {
                 return response.json();
@@ -49,7 +49,7 @@ export async function sendCommand(shellId, command) {
     };
     const path = `/shells/${shellId}`;
 
-    return fetch(backendBasePath + path, requestOptions)
+    return fetch(backendPath + path, requestOptions)
         .then(async response => {
             if (!response.ok) {
                 const text = await response.text();
@@ -68,7 +68,7 @@ export async function sendSignal(shellId, signal) {
     };
     const path = `/shells/${shellId}?asSignal=true`;
 
-    return fetch(backendBasePath + path, requestOptions)
+    return fetch(backendPath + path, requestOptions)
         .then(async response => {
             if (!response.ok) {
                 const text = await response.text();
@@ -84,7 +84,7 @@ export async function deleteShell(id) {
 
     connectionManager.remvoeShell(id);
 
-    return fetch(backendBasePath + path, requestOptions)
+    return fetch(backendPath + path, requestOptions)
         .then(async response => {
             if (!response.ok) {
                 console.log("unable to delete shell", await response.text());
@@ -96,7 +96,7 @@ export async function deleteShell(id) {
 //---- GET ----
 
 export async function loadShells (location) {
-    return fetch(backendBasePath + `/shells?host=${location.host}&port=${location.port}`)
+    return fetch(backendPath + `/shells?host=${location.host}&port=${location.port}`)
         .then(response => response.json())
         .then(response => response.sort((a, b) => {
             const aTime = new Date(a.createdAt).getTime();
@@ -141,7 +141,7 @@ export const connectionManager = new ConnectionManager();
 
 export function readOutput(id, onNext) {
     const path = `/shells/${id}/output`;
-    const eventSource = new EventSource(backendBasePath + path);
+    const eventSource = new EventSource(backendPath + path);
 
     eventSource.onmessage = function(event) {
         if (onNext) {
