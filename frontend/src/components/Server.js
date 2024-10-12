@@ -24,7 +24,20 @@ export default function Server ({ pcName, location, insertLines, executeLines })
 
     const executeButtons = (executeLines || []).map((value, index) => {
         return (
-            <button key={index} className="execute-line-btn" onClick={() => executeCommand(value.value)}>{value.label}</button>
+            <button key={index} className="execute-line-btn" onClick={async () => {
+                let result = '';
+                if (value.procedure != null) {
+                    console.log('not null');
+                    const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+
+                    const myAsync = new AsyncFunction(value.procedure);
+                    
+                    result = await myAsync(); // true
+                    console.log('r', result);
+                }
+                console.log("execute ", result, value);
+                executeCommand(value.procedure != null ? result : value.value)
+            }}>{value.label}</button>
         )
     });
 
